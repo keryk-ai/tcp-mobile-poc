@@ -64,8 +64,8 @@ export default function HomePage() {
           className="w-full p-5 rounded-2xl bg-[hsl(25,100%,50%)] text-white text-left active:opacity-85"
         >
           <div className="text-3xl mb-1">+</div>
-          <div className="font-bold text-xl">Request an Estimate</div>
-          <div className="text-orange-100 text-sm mt-1">Get a traffic control plan for your work zone</div>
+          <div className="font-bold text-xl">Request a Site</div>
+          <div className="text-orange-100 text-sm mt-1">Get a work zone configuration for your site</div>
         </button>
 
         {/* Inbox */}
@@ -77,7 +77,7 @@ export default function HomePage() {
             <div>
               <div className="text-2xl mb-1">📬</div>
               <div className="font-bold text-gray-900 text-lg">Inbox</div>
-              <div className="text-gray-500 text-sm mt-0.5">View your estimates</div>
+              <div className="text-gray-500 text-sm mt-0.5">View your sites</div>
             </div>
           </div>
         </button>

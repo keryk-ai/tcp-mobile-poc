@@ -39,7 +39,7 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
       if (!db) { setLoading(false); return; }
 
       const { collection, doc: firestoreDoc, onSnapshot } = await import('firebase/firestore');
-      const ref = firestoreDoc(collection(db, 'tcp_estimates_V1'), jobId);
+      const ref = firestoreDoc(collection(db, 'tcp_estimates'), jobId);
 
       unsubRef.current = onSnapshot(ref, (snap) => {
         if (snap.exists()) {
@@ -105,14 +105,14 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
           {loading && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="w-10 h-10 rounded-full border-4 border-[hsl(25,100%,50%)] border-t-transparent animate-spin" />
-              <p className="text-gray-600 text-sm">Loading estimate…</p>
+              <p className="text-gray-600 text-sm">Loading site…</p>
             </div>
           )}
 
           {!loading && status === 'processing' && (
             <div className="flex flex-col items-center justify-center py-16 gap-4 px-6">
               <div className="w-10 h-10 rounded-full border-4 border-[hsl(25,100%,50%)] border-t-transparent animate-spin" />
-              <p className="text-gray-900 font-semibold text-center">Generating your estimate…</p>
+              <p className="text-gray-900 font-semibold text-center">Generating your site configuration…</p>
               <p className="text-gray-500 text-sm text-center">This takes about 3–5 seconds.</p>
             </div>
           )}
@@ -128,12 +128,12 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
 
               {/* Plan image */}
               {doc.estimate_response.image_signed_url && (
-                <div className="mx-4 mb-3 rounded-xl overflow-hidden bg-gray-100">
+                <div className="mx-4 mb-3 rounded-xl overflow-hidden bg-gray-100 aspect-video">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={doc.estimate_response.image_signed_url}
                     alt="Traffic control plan"
-                    className="w-full"
+                    className="w-full h-full object-cover"
                   />
                 </div>
               )}
@@ -201,7 +201,7 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
                 {doc.estimate_response.image_signed_url && (
                   <a
                     href={doc.estimate_response.image_signed_url}
-                    download={`tcp-${jobId.slice(0, 8)}.png`}
+                    download={`tcp-${jobId.slice(0, 8)}.${doc.estimate_response.image_storage_path?.split('.').pop() ?? 'jpg'}`}
                     className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
                   >
                     ⬇ Download Image
@@ -240,7 +240,7 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
           {!loading && status === 'error' && (
             <div className="flex flex-col items-center py-12 px-6 gap-4">
               <div className="text-4xl">⚠️</div>
-              <h3 className="font-bold text-gray-900 text-center">Couldn&apos;t generate this estimate.</h3>
+              <h3 className="font-bold text-gray-900 text-center">Couldn&apos;t generate this site configuration.</h3>
               <p className="text-gray-600 text-sm text-center">
                 {ERROR_MESSAGES[doc?.estimate_response?.failure_reason ?? 'unknown']}
               </p>

@@ -43,7 +43,7 @@ function InboxContent() {
       }
 
       const q = query(
-        collection(db, 'tcp_estimates_V1'),
+        collection(db, 'tcp_estimates'),
         where('metadata.customer_org', '==', org),
         orderBy('metadata.created_at', 'desc'),
         limit(50),
@@ -83,13 +83,13 @@ function InboxContent() {
         {!loading && jobs.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
             <div className="text-4xl mb-4">📬</div>
-            <h2 className="font-bold text-gray-900 text-lg mb-1">No estimates yet</h2>
-            <p className="text-gray-500 text-sm">Submit your first estimate request to get started.</p>
+            <h2 className="font-bold text-gray-900 text-lg mb-1">No sites yet</h2>
+            <p className="text-gray-500 text-sm">Submit your first site request to get started.</p>
             <button
               onClick={() => router.push('/request/details')}
               className="mt-6 px-6 py-3 rounded-xl bg-[hsl(25,100%,50%)] text-white font-semibold text-sm"
             >
-              Request an Estimate
+              Request a Site
             </button>
           </div>
         )}

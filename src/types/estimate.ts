@@ -34,8 +34,8 @@ export interface BOMTotals {
   flaggerCount: number;
   coneCount: number;
   rawConeCount: number;
-  standCount: number;
-  sandbagCount: number;
+  standCount?: number;
+  sandbagCount?: number;
 }
 
 export interface BOMSign {
