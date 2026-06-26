@@ -761,6 +761,18 @@ Since relay is sync (~3–5s), this is shown while `await fetch('/api/estimate-p
 | `status: 'success'` | 🟢 Ready |
 | `status: 'failed'` | 🔴 Error |
 
+**Reading address and work type for the card:** These are not top-level metadata fields — they live in `service1_input.payload` (a JSON string written by the relay). Parse on the client in `jobs.ts`:
+```typescript
+const input = JSON.parse(doc.service1_input?.payload ?? '{}');
+const address  = input.location?.address  ?? '—';
+const workType = input.work?.description  ?? '—';
+```
+This is intentional for the POC — no relay changes needed. If the payload shape changes in a future relay version, update this parser.
+
+**Org display name:** `metadata.company` holds the raw `customer_org` claim value (e.g., `"lumos"`). Title-case it client-side with a `formatOrg(org: string)` utility (`"lumos" → "Lumos"`). No lookup table needed for POC.
+
+**TA code in card:** Read from `metadata.rulesContext?.taCode` — populated by the relay after the geocoder step (before `estimate_response` is written). Show `"—"` if absent (job still in early processing).
+
 List uses `onSnapshot()` on the org query — updates in real-time as estimates complete. Tap any row → `/inbox/[jobId]`.
 
 ---
