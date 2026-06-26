@@ -964,7 +964,7 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=              # geocode fallback
 
 # ElevenLabs
 ELEVENLABS_API_KEY=                           # server-side only, never exposed
-NEXT_PUBLIC_AWP_AGENT_ID=agent_xxxxx          # ElevenLabs agent ID for AWP Traffic Safety AI
+NEXT_PUBLIC_AWP_AGENT_ID=agent_8301kw2ea0h1ex0af3yjjee8kwef  # AWP Traffic Safety AI
 ```
 
 ---
@@ -1047,7 +1047,7 @@ Per Wade's spec and product decisions:
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | Create AWP Traffic Safety AI agent in ElevenLabs; capture `elevenLabsAgentId` | Morgan / AWP | Blocking AI screen — system prompt drafted |
+| 1 | ~~Create AWP Traffic Safety AI agent in ElevenLabs~~ | ✅ Done | `agent_id: agent_8301kw2ea0h1ex0af3yjjee8kwef` → `NEXT_PUBLIC_AWP_AGENT_ID` |
 | 2 | Confirm Firebase custom claims provisioning flow for `customer_org` | Morgan → Wade | Blocking Firestore security rules |
 | 3 | Confirm per-org scoping (`customer_org` field) | Morgan → Wade | Blocking Firestore security rules |
 | 4 | TA-30/30R/33 auto-detection by pipeline from OSM road geometry | Wade | Blocking lane closure plan accuracy — confirm pipeline capability |
