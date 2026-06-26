@@ -1,9 +1,9 @@
 # TCP Mobile App — POC Specification
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-06-26  
 **Status:** Ready for development  
-**Owners:** Morgan Sternberg (product), Wade (pipeline/relay), TBD (mobile dev)
+**Owners:** Morgan Stern (product), Wade (pipeline/relay), TBD (mobile dev)
 
 ---
 
@@ -86,8 +86,8 @@ src/
 │   │   ├── layout.tsx              # Step flow wrapper + progress bar
 │   │   ├── details/page.tsx        # Step 1: WO#, address, time, construction type
 │   │   ├── map/page.tsx            # Step 2: Leaflet 2-pin picker
-│   │   ├── work-type/page.tsx      # Step 3: Flagging vs Lane Closure + TA derivation
-│   │   └── review/page.tsx         # Step 4: Confirm + submit
+│   │   ├── work-type/page.tsx      # Step 3: Flagging / Lane Closure / Shoulder Closure + direction
+│   │   └── review/page.tsx         # Step 4: Confirm + submit (with budgetary disclaimer)
 │   ├── inbox/
 │   │   ├── page.tsx                # Job list — Firestore subscription by org
 │   │   └── [jobId]/
@@ -97,6 +97,8 @@ src/
 │   └── api/
 │       ├── estimate-proxy/
 │       │   └── route.ts            # POST /estimate proxy (injects auth header)
+│       ├── tcp-order/
+│       │   └── route.ts            # POST /tcp-order — submits human-review TCP request
 │       ├── geocode/
 │       │   └── route.ts            # Address search (copy from svc-frontend)
 │       └── elevenlabs/
@@ -337,44 +339,42 @@ const isFailed  = doc.estimate_response?.status === 'failed';
 
 ## 7. TA Derivation Logic
 
-The user never selects a TA code directly. They answer two plain questions; the app derives the code.
+The user selects one of three work types. The app sends the work type and direction to the relay; **the pipeline auto-detects the specific TA code from road geometry** (OSM data). The user never selects a TA code directly, and does not need to know whether the road has a median.
 
-### Decision tree
+### Work types (user-facing)
 
-| Work type | Road type | Closed lane | → `taNumber` | `workLocation` |
-|---|---|---|---|---|
-| Flagging | — | — | `ta-10` | `"right"` |
-| Lane Closure | No median (2-lane) | Left | `ta-30` | `"left"` |
-| Lane Closure | No median (2-lane) | Right | `ta-30r` | `"right"` |
-| Lane Closure | Divided (median present) | Left | `ta-33` | `"left"` |
-| Lane Closure | Divided (median present) | Right | `ta-33` | `"right"` |
+| User selection | `workType` sent to relay | TA resolved by pipeline |
+|---|---|---|
+| Flagging | `"flagging"` | `ta-10` (always) |
+| Lane Closure | `"lane-closure"` | `ta-30`, `ta-30r`, or `ta-33` — pipeline detects from OSM road geometry |
+| Shoulder Closure | `"shoulder-closure"` | `ta-shoulder` (TBD — see Open Item #8) |
 
-**TA-30 vs TA-30R vs TA-33 sign placement:**
-- **TA-30**: Left lane closure, no median — signs on left shoulder only
-- **TA-30R**: Right lane closure, no median — signs on right shoulder only  
-- **TA-33**: Either lane, divided highway — dual sign deployment (shoulder + median)
+**Pipeline TA resolution for lane closure:**
+- **TA-30**: Left lane closure, two-lane road without median
+- **TA-30R**: Right lane closure, two-lane road without median
+- **TA-33**: Either lane, divided highway with median — dual sign deployment (shoulder + median)
 
-### `taLogic.ts`
+The pipeline determines median presence and lane position from the pin coordinates and OSM road data. The app does not ask the user about road geometry.
+
+### `taLogic.ts` (simplified — work type only)
 
 ```typescript
-type WorkType = 'flagging' | 'lane-closure';
-type RoadType = 'no-median' | 'divided';
-type LaneSide = 'left' | 'right';
+type WorkType = 'flagging' | 'lane-closure' | 'shoulder-closure';
 
-export function deriveTA(
-  workType: WorkType,
-  roadType: RoadType,
-  closedLane: LaneSide
-): { taNumber: string; workLocation: LaneSide } {
-  if (workType === 'flagging') return { taNumber: 'ta-10', workLocation: 'right' };
-  if (roadType === 'no-median') {
-    return closedLane === 'left'
-      ? { taNumber: 'ta-30',  workLocation: 'left' }
-      : { taNumber: 'ta-30r', workLocation: 'right' };
-  }
-  return { taNumber: 'ta-33', workLocation: closedLane };
+export function buildWorkTypePayload(workType: WorkType, direction: string) {
+  return {
+    workType,
+    work: {
+      duration:    'Short-Term',
+      direction,
+      // taNumber resolved server-side by pipeline for lane-closure and shoulder-closure
+      ...(workType === 'flagging' && { taNumber: 'ta-10', workLocation: 'right' }),
+    }
+  };
 }
 ```
+
+> **Note:** For flagging, `ta-10` is deterministic so the app sets it directly. For lane closure and shoulder closure, `taNumber` is omitted from the client payload and set by the relay after OSM analysis. Confirm exact payload contract with Wade (Open Item #8).
 
 ---
 
@@ -557,26 +557,19 @@ Distance and direction auto-calculate from pin positions using `mapUtils.ts` (Ha
 │  ┌──────────────────────────┐  │
 │  │  🚧  Lane Closure     ●  │  │  ← selected
 │  └──────────────────────────┘  │
+│  ┌──────────────────────────┐  │
+│  │  🛞  Shoulder Closure    │  │
+│  └──────────────────────────┘  │
 │────────────────────────────────│
-│  [if Lane Closure]             │
-│                                │
-│  Is there a median or divider  │
-│  between opposing lanes?       │
-│  ○  No  — two-lane road        │
-│  ●  Yes — divided highway      │
-│                                │
-│  Which lane is being closed?   │
-│  ○  Left lane                  │
-│  ●  Right lane                 │
-│                                │
 │  Direction of travel:          │
 │  ┌──────────────────────────┐  │
 │  │  Northbound            ▾ │  │
 │  └──────────────────────────┘  │
 │                                │
-│  ──────────────────────────    │
-│  Plan type: TA-33              │  ← derived, shown for transparency
-│  ──────────────────────────    │
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   │
+│  ⓘ Plan type will be           │
+│     determined from road data  │  ← replaces manual TA preview
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   │
 │                                │
 │  ┌──────────────────────────┐  │
 │  │          Next →          │  │
@@ -584,9 +577,9 @@ Distance and direction auto-calculate from pin positions using `mapUtils.ts` (Ha
 └────────────────────────────────┘
 ```
 
-TA code displayed at bottom of step as confirmation. User never selects it directly.
+Three work types: **Flagging**, **Lane Closure**, **Shoulder Closure**. The pipeline auto-detects the specific TA code (TA-30, TA-30R, TA-33, etc.) from road geometry — the user does not select a median type or lane side.
 
-Direction options: Northbound / Southbound / Eastbound / Westbound. Pre-populated from the bearing calculated in Step 2 (can be overridden).
+Direction options: Northbound / Southbound / Eastbound / Westbound. Pre-populated from the bearing calculated in Step 2 (can be overridden). Direction is collected for all three work types.
 
 ---
 
@@ -608,11 +601,16 @@ Direction options: Northbound / Southbound / Eastbound / Westbound. Pre-populate
 │  Time         Day              │
 │  Construction Underground      │
 │  Work Type    Lane Closure     │
-│  Plan (TA)    TA-33            │
 │  Direction    Northbound       │
-│  Closed Lane  Right            │
 │  Distance     850 ft           │
 │────────────────────────────────│
+│  ┌──────────────────────────┐  │
+│  │  ⓘ Draft budgetary       │  │
+│  │    estimate only. For a   │  │
+│  │    compliant TCP, order   │  │
+│  │    a reviewed plan from   │  │
+│  │    the result screen.     │  │
+│  └──────────────────────────┘  │
 │  ┌──────────────────────────┐  │
 │  │   ✏ Edit                 │  │
 │  └──────────────────────────┘  │
@@ -623,6 +621,8 @@ Direction options: Northbound / Southbound / Eastbound / Westbound. Pre-populate
 ```
 
 "Edit" navigates back to Step 1 preserving all values. "Submit" calls `POST /api/estimate-proxy`, shows inline loading state ("Generating your estimate…" with spinner), then navigates to Job Detail on `200` response.
+
+**Plan (TA) removed from review:** TA code is no longer shown at Step 4 — the pipeline determines it after submission. The job detail screen shows the resolved TA code once the plan is ready.
 
 ---
 
@@ -692,6 +692,8 @@ List uses `onSnapshot()` on the org query — updates in real-time as estimates 
 ┌────────────────────────────────┐
 │ ←  WO-2024-099      🟢 Ready  │
 │────────────────────────────────│
+│  ⓘ Draft budgetary estimate    │  ← disclaimer banner, always visible
+│────────────────────────────────│
 │┌──────────────────────────────┐│
 ││                              ││
 ││   [rendered plan image]      ││  ← pinch-zoom, pan
@@ -699,7 +701,7 @@ List uses `onSnapshot()` on the org query — updates in real-time as estimates 
 ││   1920×1080, full width      ││
 ││                              ││
 │└──────────────────────────────┘│
-│  Map height: ~45% of screen    │
+│  Image height: ~45% of screen  │
 │────────────────────────────────│
 │  Bill of Materials             │
 │                                │
@@ -721,17 +723,44 @@ List uses `onSnapshot()` on the org query — updates in real-time as estimates 
 │  ┌──────────────────────────┐  │
 │  │  🎙  Ask AI about this   │  │  ← navigates to /ai?jobId=...
 │  └──────────────────────────┘  │
+│  ┌──────────────────────────┐  │
+│  │  📋  Order a Reviewed    │  │  ← new
+│  │      TCP from AWP        │  │
+│  └──────────────────────────┘  │
 │────────────────────────────────│
-│  TA-33 · Northbound · Right    │
+│  TA-33 · Northbound            │
 │  Distance: 850 ft              │
 │  Submitted: Jun 25, 2:34 PM    │
 │  By: sarah@lumos.com           │
 └────────────────────────────────┘
 ```
 
-**Download Image:** `expo-file-system` (RN) / `<a download>` (web) — fetches `image_signed_url` and saves to device or triggers browser download.
+**Budgetary disclaimer banner:** Persistent, non-dismissible banner at top of job detail. Text: "Draft estimate — for budgeting & planning only. Not a compliant TCP."
+
+**Download Image:** `<a download>` (web) — fetches `image_signed_url` and triggers browser download.
 
 **Ask AI about this:** Navigates to `/ai?jobId=<id>`. The voice agent is pre-loaded with this estimate's context as dynamic variables (WO#, address, TA code, BOM totals).
+
+**Order a Reviewed TCP from AWP:** Opens a bottom sheet confirmation:
+```
+┌────────────────────────────────┐
+│  Order a Reviewed TCP          │
+│────────────────────────────────│
+│  An AWP traffic engineer will  │
+│  review this location and      │
+│  deliver a compliant, field-   │
+│  ready TCP within 72 hours.    │
+│                                │
+│  Work Order: WO-2024-099       │
+│  Address: 456 Oak Ave, Raleigh │
+│                                │
+│  ┌──────────────────────────┐  │
+│  │   Submit TCP Request     │  │
+│  └──────────────────────────┘  │
+│         Cancel                 │
+└────────────────────────────────┘
+```
+On confirm: calls `POST /api/tcp-order` with the job ID. On success, shows inline confirmation: "Your TCP request has been submitted. AWP will deliver your plan within 72 hours." Backend details TBD (Open Item #9).
 
 **PDF:** Not available in v1. Out of scope per Wade's spec.
 
@@ -941,16 +970,16 @@ NEXT_PUBLIC_AWP_AGENT_ID=agent_xxxxx          # ElevenLabs agent ID for AWP Traf
 |---|---|
 | 1 | Repo setup: Next.js 15, Tailwind, Firebase config, PWA manifest, mobile viewport, login screen, auth guard |
 | 2 | Home dashboard, step flow shell (`/request/layout.tsx`), `StepNav` progress bar component, `sessionStorage` form state |
-| 3 | Step 1 (details form) + Step 3 (work type — flagging/lane closure decision tree, `deriveTA()`, direction selector) |
+| 3 | Step 1 (details form) + Step 3 (work type — Flagging / Lane Closure / Shoulder Closure, direction selector, budgetary disclaimer info block) |
 | 4 | Step 2 (Leaflet pin map — `PinMap.tsx`, 2-pin placement, auto-center on Step 1 address, distance/direction auto-calc) |
-| 5 | Step 4 (review screen) + `POST /api/estimate-proxy` route + submission loading state + confirmation navigation |
+| 5 | Step 4 (review screen + budgetary disclaimer banner) + `POST /api/estimate-proxy` route + submission loading state + confirmation navigation |
 
 ### Week 2 — Inbox, job detail, AI
 
 | Day | Deliverable |
 |---|---|
 | 6 | `jobs.ts` Firestore subscriptions, Inbox list (`onSnapshot` org query), `JobCard`, `StatusBadge` |
-| 7 | Job detail — image display (pinch-zoom), `BOMDisplay` (all fields including stands/sandbags), Download Image |
+| 7 | Job detail — image display (pinch-zoom), `BOMDisplay` (all fields including stands/sandbags), Download Image, budgetary disclaimer banner, "Order a TCP" button + bottom sheet + `POST /api/tcp-order` route |
 | 8 | `/api/elevenlabs/signed-url` route, `VoiceAgent.tsx` component, AI screen (`/ai`) |
 | 9 | AI context from Job Detail (`/ai?jobId=...`), dynamic variables injection, orb animation |
 | 10 | End-to-end smoke test on demo device, mobile CSS polish, error states (failed estimate, network error, expired session) |
@@ -973,6 +1002,7 @@ Per Wade's spec and product decisions:
 - GPS-based start pin (Phase 2)
 - Signed URL refresh endpoint (implement only if edge case surfaces during testing)
 - BOM download as CSV/PDF
+- TCP order status tracking in-app — v1 shows confirmation message only; tracking the 72-hour delivery is out of scope for POC
 
 ---
 
@@ -980,13 +1010,15 @@ Per Wade's spec and product decisions:
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | Create AWP Traffic Safety AI agent in ElevenLabs; capture `elevenLabsAgentId` | Morgan / AWP | Blocking AI screen |
+| 1 | Create AWP Traffic Safety AI agent in ElevenLabs; capture `elevenLabsAgentId` | Morgan / AWP | Blocking AI screen — system prompt drafted |
 | 2 | Confirm Firebase custom claims provisioning flow for `customer_org` | Morgan → Wade | Blocking Firestore security rules |
 | 3 | Confirm per-org scoping (`customer_org` field) | Morgan → Wade | Blocking Firestore security rules |
-| 4 | Confirm Wade's relay accepts `ta-30` and `ta-30r` as valid `taNumber` values | ✅ Confirmed | Done |
+| 4 | TA-30/30R/33 auto-detection by pipeline from OSM road geometry | Wade | Blocking lane closure plan accuracy — confirm pipeline capability |
 | 5 | Seed one success + one failure doc in `tcp_estimates_V1` for dev testing | Wade | Needed before Day 6 |
 | 6 | AWP branding assets — logo, primary color, icon files | Morgan / AWP | Needed before Day 1 |
 | 7 | Firebase project config values for mobile app env | Morgan | Needed before Day 1 |
+| 8 | Shoulder closure TA selection and relay payload contract (`taNumber` value, any additional fields) | Wade | Blocking shoulder closure submission |
+| 9 | "Order a TCP" backend — relay endpoint or new service, Firestore schema for TCP orders, 72-hour SLA fulfillment flow | Wade / Morgan | Blocking Day 7 TCP order feature |
 
 ---
 
