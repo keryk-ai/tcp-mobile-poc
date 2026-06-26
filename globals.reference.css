@@ -1,0 +1,191 @@
+/* ── AWP Safety Font — Unitext (Official) ────────────────────────────────── */
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-light.otf') format('opentype');
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-regular.otf') format('opentype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-italic.otf') format('opentype');
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-semibold.otf') format('opentype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-bold.otf') format('opentype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* AWP Light Mode */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 6%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 6%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 6%;
+    --primary: 25 100% 50%;        /* AWP Orange #FF6B00 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 213 14% 40%;
+    --accent: 25 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 25 100% 50%;
+    --chart-1: 25 100% 50%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 213 57% 20%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 340 75% 55%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* AWP Dark Mode — near-black with dark blue tint */
+    --background: 213 57% 9%;      /* #0A1525 */
+    --foreground: 0 0% 100%;
+    --card: 213 45% 14%;           /* #142035 */
+    --card-foreground: 0 0% 100%;
+    --popover: 213 44% 17%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 25 100% 50%;        /* AWP Orange #FF6B00 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 213 44% 20%;      /* #1C2E48 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 213 44% 20%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 25 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 213 36% 26%;         /* #2A3F5A */
+    --input: 213 40% 21%;
+    --ring: 25 100% 50%;
+    --chart-1: 25 100% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 195 60% 45%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --font-sans: 'Unitext', var(--font-alegreya-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Unitext', var(--font-alegreya-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Force dark mode styles for all components */
+* {
+  border-color: hsl(var(--border));
+}
+
+/* Ensure dropdowns are opaque and properly styled */
+.dark [data-radix-popper-content-wrapper] {
+  background: hsl(var(--popover)) !important;
+}
+
+/* Ensure select content is opaque in dark mode */
+.dark [role="listbox"] {
+  background: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+/* Ensure tab content area has proper background */
+.dark [role="tabpanel"] {
+  background: transparent;
+}
+
+/* Force opaque backgrounds for all popover content */
+.dark [data-radix-select-content] {
+  background: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  opacity: 1 !important;
+}
+
+/* Ensure proper button styling in dark mode */
+.dark button {
+  border-color: hsl(var(--border));
+}
+
+/* Ensure cards have proper dark backgrounds */
+.dark .rounded-lg {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+/* Tab navigation styling */
+.dark [role="tablist"] {
+  background: hsl(var(--muted)) !important;
+}
+
+/* Ensure text in the geocoder search bar is visible */
+.leaflet-control-geocoder-form input {
+  color: #000 !important;
+  background-color: #fff !important;
+}
+
+.dark .leaflet-control-geocoder-form input {
+  color: #000 !important;
+  background-color: #fff !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.leaflet-control-geocoder-form input::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+/* Ensure the geocoder dropdown also has proper styling */
+.leaflet-control-geocoder-alternatives {
+  background-color: #fff !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.dark .leaflet-control-geocoder-alternatives {
+  background-color: #fff !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.leaflet-control-geocoder-alternatives a {
+  color: #000 !important;
+}
+
+.dark .leaflet-control-geocoder-alternatives a {
+  color: #000 !important;
+}
+
+.leaflet-control-geocoder-alternatives a:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.dark .leaflet-control-geocoder-alternatives a:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.leaflet-container {
+  z-index: 0;
+}
