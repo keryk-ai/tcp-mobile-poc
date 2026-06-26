@@ -1,6 +1,6 @@
 # TCP Mobile App — POC Specification
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 2026-06-26  
 **Status:** Ready for development  
 **Owners:** Morgan Stern (product), Wade (pipeline/relay), TBD (mobile dev)
@@ -15,6 +15,10 @@ The app has three primary features:
 1. **Request an Estimate** — submit a work zone location and type; receive a rendered plan image + bill of materials
 2. **Inbox** — view and download completed estimates
 3. **Ask AWP Traffic Safety AI** — voice conversation with an ElevenLabs agent for traffic control guidance
+
+### Platform Vision
+
+The home screen is designed as a **launchpad**, not just a single-purpose tool. Each card on the home screen represents a product or capability AWP offers (or will offer) to enterprise customers. The POC ships with three live features and one visible "Future Feature" placeholder card — demonstrating to customers and AWP stakeholders that this is an extensible platform, not a one-off app. Future cards could represent permit management, inspector scheduling, fleet/flagger tracking, compliance documentation, safety training, and more.
 
 This document covers the input/inbox app only. Pipeline behavior (relay, svc-4-map) is defined in Wade's integration spec (`2026-06-26-mobile-estimate-integration.md`).
 
@@ -97,8 +101,6 @@ src/
 │   └── api/
 │       ├── estimate-proxy/
 │       │   └── route.ts            # POST /estimate proxy (injects auth header)
-│       ├── tcp-order/
-│       │   └── route.ts            # POST /tcp-order — submits human-review TCP request
 │       ├── geocode/
 │       │   └── route.ts            # Address search (copy from svc-frontend)
 │       └── elevenlabs/
@@ -111,7 +113,8 @@ src/
 │   ├── BOMDisplay.tsx              # Structured BOM — signs, devices, cones, stands, sandbags
 │   ├── VoiceAgent.tsx              # ElevenLabs conversation UI — orb + transcript
 │   ├── StepNav.tsx                 # Progress bar + back/next buttons
-│   └── StatusBadge.tsx             # Processing / Ready / Failed badge
+│   ├── StatusBadge.tsx             # Processing / Ready / Failed badge
+│   └── ComingSoonSheet.tsx         # Reusable bottom sheet for Coming Soon taps (Future Feature card, Order TCP, etc.)
 ├── lib/
 │   ├── firebase.ts                 # (copied from svc-frontend)
 │   ├── auth.ts                     # (copied from svc-frontend)
@@ -456,10 +459,37 @@ Firebase email/password. On success, redirect to `/home`. Persist session with F
 │  │      Safety AI           │  │
 │  └──────────────────────────┘  │
 │                                │
+│  ┌──────────────────────────┐  │
+│  │  ✦  Future Feature  Coming│  │
+│  │                     Soon  │  │  ← platform teaser card
+│  └──────────────────────────┘  │
+│                                │
 └────────────────────────────────┘
 ```
 
 Inbox badge count = estimates where `estimate_response.status === 'success'` that the user hasn't viewed this session. Computed from the org's Firestore subscription on home mount.
+
+**Future Feature card:** Visually distinct from the three live cards — muted/outlined style with a "Coming Soon" pill badge. Tapping it opens a bottom sheet:
+
+```
+┌────────────────────────────────┐
+│  Coming Soon                   │
+│────────────────────────────────│
+│                                │
+│  AWP is building more tools    │
+│  on this platform. Upcoming    │
+│  features include permit        │
+│  management, inspector          │
+│  scheduling, compliance         │
+│  documentation, and more.      │
+│                                │
+│  ┌──────────────────────────┐  │
+│  │         Got It           │  │
+│  └──────────────────────────┘  │
+└────────────────────────────────┘
+```
+
+No navigation, no API call. The card exists to communicate platform vision during demos.
 
 ---
 
@@ -741,26 +771,32 @@ List uses `onSnapshot()` on the org query — updates in real-time as estimates 
 
 **Ask AI about this:** Navigates to `/ai?jobId=<id>`. The voice agent is pre-loaded with this estimate's context as dynamic variables (WO#, address, TA code, BOM totals).
 
-**Order a Reviewed TCP from AWP:** Opens a bottom sheet confirmation:
+**Order a Reviewed TCP from AWP:** Tapping opens a "Coming Soon" bottom sheet. No backend call — POC only:
+
 ```
 ┌────────────────────────────────┐
-│  Order a Reviewed TCP          │
+│  Coming Soon                   │
 │────────────────────────────────│
-│  An AWP traffic engineer will  │
-│  review this location and      │
-│  deliver a compliant, field-   │
-│  ready TCP within 72 hours.    │
 │                                │
-│  Work Order: WO-2024-099       │
-│  Address: 456 Oak Ave, Raleigh │
+│  TCP ordering will be          │
+│  available in a future         │
+│  update.                       │
+│                                │
+│  An AWP traffic engineer will  │
+│  review your location and      │
+│  deliver a compliant, field-   │
+│  ready plan within 72 hours.   │
+│                                │
+│  To order now, contact AWP     │
+│  directly.                     │
 │                                │
 │  ┌──────────────────────────┐  │
-│  │   Submit TCP Request     │  │
+│  │         Got It           │  │
 │  └──────────────────────────┘  │
-│         Cancel                 │
 └────────────────────────────────┘
 ```
-On confirm: calls `POST /api/tcp-order` with the job ID. On success, shows inline confirmation: "Your TCP request has been submitted. AWP will deliver your plan within 72 hours." Backend details TBD (Open Item #9).
+
+No API route required for POC. Backend implementation is post-POC (see Open Item #9).
 
 **PDF:** Not available in v1. Out of scope per Wade's spec.
 
@@ -969,7 +1005,7 @@ NEXT_PUBLIC_AWP_AGENT_ID=agent_xxxxx          # ElevenLabs agent ID for AWP Traf
 | Day | Deliverable |
 |---|---|
 | 1 | Repo setup: Next.js 15, Tailwind, Firebase config, PWA manifest, mobile viewport, login screen, auth guard |
-| 2 | Home dashboard, step flow shell (`/request/layout.tsx`), `StepNav` progress bar component, `sessionStorage` form state |
+| 2 | Home dashboard (4 cards: 3 live + Future Feature teaser), step flow shell (`/request/layout.tsx`), `StepNav` progress bar component, `sessionStorage` form state, shared `ComingSoonSheet` bottom sheet component |
 | 3 | Step 1 (details form) + Step 3 (work type — Flagging / Lane Closure / Shoulder Closure, direction selector, budgetary disclaimer info block) |
 | 4 | Step 2 (Leaflet pin map — `PinMap.tsx`, 2-pin placement, auto-center on Step 1 address, distance/direction auto-calc) |
 | 5 | Step 4 (review screen + budgetary disclaimer banner) + `POST /api/estimate-proxy` route + submission loading state + confirmation navigation |
@@ -979,7 +1015,7 @@ NEXT_PUBLIC_AWP_AGENT_ID=agent_xxxxx          # ElevenLabs agent ID for AWP Traf
 | Day | Deliverable |
 |---|---|
 | 6 | `jobs.ts` Firestore subscriptions, Inbox list (`onSnapshot` org query), `JobCard`, `StatusBadge` |
-| 7 | Job detail — image display (pinch-zoom), `BOMDisplay` (all fields including stands/sandbags), Download Image, budgetary disclaimer banner, "Order a TCP" button + bottom sheet + `POST /api/tcp-order` route |
+| 7 | Job detail — image display (pinch-zoom), `BOMDisplay` (all fields including stands/sandbags), Download Image, budgetary disclaimer banner, "Order a TCP" Coming Soon sheet, "Ask AI" button |
 | 8 | `/api/elevenlabs/signed-url` route, `VoiceAgent.tsx` component, AI screen (`/ai`) |
 | 9 | AI context from Job Detail (`/ai?jobId=...`), dynamic variables injection, orb animation |
 | 10 | End-to-end smoke test on demo device, mobile CSS polish, error states (failed estimate, network error, expired session) |
@@ -1002,7 +1038,8 @@ Per Wade's spec and product decisions:
 - GPS-based start pin (Phase 2)
 - Signed URL refresh endpoint (implement only if edge case surfaces during testing)
 - BOM download as CSV/PDF
-- TCP order status tracking in-app — v1 shows confirmation message only; tracking the 72-hour delivery is out of scope for POC
+- TCP order backend — "Order a TCP" button shows "Coming Soon" in POC; full ordering flow (API, fulfillment, status tracking) is post-POC (Open Item #9)
+- Future Feature card backend — home screen teaser card is a static Coming Soon placeholder; actual feature TBD by AWP
 
 ---
 
@@ -1018,7 +1055,8 @@ Per Wade's spec and product decisions:
 | 6 | AWP branding assets — logo, primary color, icon files | Morgan / AWP | Needed before Day 1 |
 | 7 | Firebase project config values for mobile app env | Morgan | Needed before Day 1 |
 | 8 | Shoulder closure TA selection and relay payload contract (`taNumber` value, any additional fields) | Wade | Blocking shoulder closure submission |
-| 9 | "Order a TCP" backend — relay endpoint or new service, Firestore schema for TCP orders, 72-hour SLA fulfillment flow | Wade / Morgan | Blocking Day 7 TCP order feature |
+| 9 | "Order a TCP" backend — relay endpoint or new service, Firestore schema for TCP orders, 72-hour SLA fulfillment flow | Wade / Morgan | Post-POC — button shows "Coming Soon" in demo |
+| 10 | Future Feature card — define the next AWP product/feature to build on this platform | Morgan / AWP | Post-POC — static teaser card in demo |
 
 ---
 
