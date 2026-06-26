@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+.env*.local
+.DS_Store
+*.pem
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+.vercel
+.turbo
+coverage/
