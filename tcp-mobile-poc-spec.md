@@ -1156,7 +1156,7 @@ Per Wade's spec and product decisions:
 | 3 | Confirm per-org scoping (`customer_org` field) | Morgan → Wade | Blocking Firestore security rules |
 | 4 | ~~TA-30/30R/33 auto-detection by pipeline from OSM road geometry~~ | ✅ Confirmed | Relay `derive_ta_code()` uses OSM road type + `selected_lane` from payload. App must send `selected_lane: "left"\|"right"` for lane closures. |
 | 5 | Seed one success + one failure doc in `tcp_estimates_V1` for dev testing | Wade | Needed before Day 6 |
-| 6 | AWP branding assets — logo, primary color, icon files | Morgan / AWP | Needed before Day 1 |
+| 6 | ~~AWP branding assets — logo, primary color, icon files~~ | ✅ Done | Copied from svc-frontend: logos, Unitext font, #FF6B00 primary, #0A1525 dark bg |
 | 7 | Firebase project config values for mobile app env | Morgan | Needed before Day 1. Map tokens (Mapbox, Google) already in Infisical (TCP project). |
 | 8 | Shoulder closure TA — no TA code exists yet | Wade | Deferred: Shoulder Closure card shows "Coming Soon" in v1; full support post-POC |
 | 9 | "Order a TCP" backend — relay endpoint or new service, Firestore schema for TCP orders, 72-hour SLA fulfillment flow | Wade / Morgan | Post-POC — button shows "Coming Soon" in demo |
