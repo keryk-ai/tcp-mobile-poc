@@ -111,10 +111,11 @@ src/
 │   ├── PinMap.tsx                  # Leaflet map — A/B pin placement only
 │   ├── JobCard.tsx                 # Inbox list item with status badge
 │   ├── BOMDisplay.tsx              # Structured BOM — signs, devices, cones, stands, sandbags
+│   ├── JobDetailSheet.tsx          # Full-screen bottom sheet — image, BOM, action buttons
 │   ├── VoiceAgent.tsx              # ElevenLabs conversation UI — orb + transcript
 │   ├── StepNav.tsx                 # Progress bar + back/next buttons
 │   ├── StatusBadge.tsx             # Processing / Ready / Failed badge
-│   └── ComingSoonSheet.tsx         # Reusable bottom sheet for Coming Soon taps (Future Feature card, Order TCP, etc.)
+│   └── ComingSoonSheet.tsx         # Reusable bottom sheet for Coming Soon taps (Quote, TCP, Schedule, Future Feature)
 ├── lib/
 │   ├── firebase.ts                 # (copied from svc-frontend)
 │   ├── auth.ts                     # (copied from svc-frontend)
@@ -773,123 +774,118 @@ This is intentional for the POC — no relay changes needed. If the payload shap
 
 **TA code in card:** Read from `metadata.rulesContext?.taCode` — populated by the relay after the geocoder step (before `estimate_response` is written). Show `"—"` if absent (job still in early processing).
 
-List uses `onSnapshot()` on the org query — updates in real-time as estimates complete. Tap any row → `/inbox/[jobId]`.
+List uses `onSnapshot()` on the org query — updates in real-time as estimates complete. Tap any row → opens `JobDetailSheet` as a full-screen bottom sheet over the inbox.
 
 ---
 
-### Screen: Job Detail (Ready)
+### Screen: Job Detail Sheet
 
+**Interaction model:** Tapping a job card slides up a full-screen bottom sheet (`JobDetailSheet.tsx`) over the inbox. The inbox is dimmed behind it. Drag handle at the top; swipe down or tap the handle to dismiss. No page navigation — sheet state is managed locally in the inbox component. URL does not change (deep-link via `/inbox/[jobId]` route is a separate full-page fallback for post-submit navigation).
+
+**Job Detail Sheet — Ready state:**
 ```
-┌────────────────────────────────┐
-│ ←  WO-2024-099      🟢 Ready  │
-│────────────────────────────────│
-│  ⓘ Draft budgetary estimate    │  ← disclaimer banner, always visible
-│────────────────────────────────│
-│┌──────────────────────────────┐│
-││                              ││
-││   [rendered plan image]      ││  ← pinch-zoom, pan
-││   image_signed_url           ││
-││   1920×1080, full width      ││
-││                              ││
-│└──────────────────────────────┘│
-│  Image height: ~45% of screen  │
-│────────────────────────────────│
-│  Bill of Materials             │
-│                                │
-│  Signs                         │
-│  ROAD WORK AHEAD (W20-1)    4  │
-│  END ROAD WORK (G20-2)      4  │
-│  LANE CLOSED AHEAD (R4-11)  2  │
-│                                │
-│  Devices                       │
-│  Type III Barricade         4  │
-│                                │
-│  Cones                     80  │
-│  Sign Stands                8  │
-│  Sandbags                  16  │
-│────────────────────────────────│
-│  ┌──────────────────────────┐  │
-│  │  ⬇  Download Image      │  │
-│  └──────────────────────────┘  │
-│  ┌──────────────────────────┐  │
-│  │  🎙  Ask AI about this   │  │  ← navigates to /ai?jobId=...
-│  └──────────────────────────┘  │
-│  ┌──────────────────────────┐  │
-│  │  📋  Order a Reviewed    │  │  ← new
-│  │      TCP from AWP        │  │
-│  └──────────────────────────┘  │
-│────────────────────────────────│
-│  TA-33 · Northbound            │
-│  Distance: 850 ft              │
-│  Submitted: Jun 25, 2:34 PM    │
-│  By: sarah@lumos.com           │
-└────────────────────────────────┘
+┌─────────────────────────────────┐  ← inbox dimmed behind
+│           ━━━━━                 │  ← drag handle
+│  WO-2024-099          🟢 Ready  │
+│  TA-33 · Northbound · 850 ft    │
+│─────────────────────────────────│
+│  ⓘ Draft estimate — budgeting   │  ← disclaimer, always visible
+│    & planning only.             │
+│─────────────────────────────────│
+│┌───────────────────────────────┐│
+││                               ││
+││   [rendered plan image]       ││  ← pinch-zoom, pan
+││                          [⬇]  ││  ← download icon, top-right of image
+││                               ││
+│└───────────────────────────────┘│
+│  Image height: ~40% of screen   │
+│─────────────────────────────────│
+│  Bill of Materials              │
+│                                 │
+│  Signs                          │
+│  ROAD WORK AHEAD (W20-1)     4  │
+│  END ROAD WORK (G20-2)       4  │
+│  LANE CLOSED AHEAD (R4-11)   2  │
+│                                 │
+│  Devices                        │
+│  Type III Barricade          4  │
+│                                 │
+│  Cones                      80  │
+│  Sign Stands                 8  │
+│  Sandbags                   16  │
+│─────────────────────────────────│
+│  🎙 Ask AI about this plan  →   │  ← text link, navigates to /ai?jobId=...
+│─────────────────────────────────│
+│  Submitted Jun 25, 2:34 PM      │
+│  By: sarah@lumos.com            │
+│─────────────────────────────────│
+│  ┌─────────┐┌─────────┐┌──────┐ │
+│  │  Quote  ││   TCP   ││ Sched│ │  ← all Coming Soon
+│  └─────────┘└─────────┘└──────┘ │
+└─────────────────────────────────┘
 ```
 
-**Budgetary disclaimer banner:** Persistent, non-dismissible banner at top of job detail. Text: "Draft estimate — for budgeting & planning only. Not a compliant TCP."
-
-**Download Image:** `<a download>` (web) — fetches `image_signed_url` and triggers browser download.
-
-**Ask AI about this:** Navigates to `/ai?jobId=<id>`. The voice agent is pre-loaded with this estimate's context as dynamic variables (WO#, address, TA code, BOM totals).
-
-**Order a Reviewed TCP from AWP:** Tapping opens a "Coming Soon" bottom sheet. No backend call — POC only:
-
+**Job Detail Sheet — Processing state:**
 ```
-┌────────────────────────────────┐
-│  Coming Soon                   │
-│────────────────────────────────│
-│                                │
-│  TCP ordering will be          │
-│  available in a future         │
-│  update.                       │
-│                                │
-│  An AWP traffic engineer will  │
-│  review your location and      │
-│  deliver a compliant, field-   │
-│  ready plan within 72 hours.   │
-│                                │
-│  To order now, contact AWP     │
-│  directly.                     │
-│                                │
-│  ┌──────────────────────────┐  │
-│  │         Got It           │  │
-│  └──────────────────────────┘  │
-└────────────────────────────────┘
+┌─────────────────────────────────┐
+│           ━━━━━                 │
+│  WO-2024-001       🟡 Processing│
+│─────────────────────────────────│
+│                                 │
+│         ◌  (spinner)            │
+│    Generating your estimate…    │
+│    Usually takes 3–5 seconds.   │
+│                                 │
+│─────────────────────────────────│
+│  ┌─────────┐┌─────────┐┌──────┐ │
+│  │  Quote  ││   TCP   ││ Sched│ │  ← disabled while processing
+│  └─────────┘└─────────┘└──────┘ │
+└─────────────────────────────────┘
 ```
 
-No API route required for POC. Backend implementation is post-POC (see Open Item #9).
-
-**PDF:** Not available in v1. Out of scope per Wade's spec.
-
-**Expired signed URL (edge case):** If `image_signed_url` fails to load (7-day expiry), show a "Refresh image" button that calls a new `/api/estimate-proxy/refresh-url?jobId=<id>` endpoint. Regenerates signed URL from `image_storage_path`. Low priority — implement only if needed.
-
----
-
-### Screen: Job Detail (Error)
-
+**Job Detail Sheet — Error state:**
 ```
-┌────────────────────────────────┐
-│ ←  WO-2024-088      🔴 Error  │
-│────────────────────────────────│
-│                                │
-│         ⚠                      │
-│                                │
-│    Couldn't generate this      │
-│    estimate.                   │
-│                                │
-│    We couldn't find a road     │  ← failure_reason: no_road_data
-│    at that location. Try a     │
-│    nearby address.             │
-│                                │
-│  ┌──────────────────────────┐  │
-│  │   Try Again              │  │
-│  └──────────────────────────┘  │
-│                                │
-│  TA-10 · Northbound            │
-│  123 Main St, Charlotte NC     │
-│  Submitted: Jun 20, 9:10 AM    │
-└────────────────────────────────┘
+┌─────────────────────────────────┐
+│           ━━━━━                 │
+│  WO-2024-088          🔴 Error  │
+│─────────────────────────────────│
+│                                 │
+│              ⚠                  │
+│    Couldn't generate this       │
+│    estimate.                    │
+│                                 │
+│    We couldn't find a road      │
+│    at that location. Try a      │
+│    nearby address.              │
+│                                 │
+│  ┌───────────────────────────┐  │
+│  │        Try Again          │  │
+│  └───────────────────────────┘  │
+│─────────────────────────────────│
+│  ┌─────────┐┌─────────┐┌──────┐ │
+│  │  Quote  ││   TCP   ││ Sched│ │  ← disabled on error
+│  └─────────┘└─────────┘└──────┘ │
+└─────────────────────────────────┘
 ```
+
+**Action buttons — all Coming Soon in POC:**
+
+| Button | Intent | POC behavior |
+|---|---|---|
+| Quote | Request a pricing quote for the traffic control work | Opens `ComingSoonSheet` |
+| TCP | Order an MUTCD-compliant, engineer-reviewed traffic control plan | Opens `ComingSoonSheet` |
+| Schedule | Request AWP to schedule and deploy the traffic control setup | Opens `ComingSoonSheet` |
+
+Each Coming Soon sheet uses the shared `ComingSoonSheet.tsx` component with button-specific copy:
+- **Quote:** "Pricing quotes will be available in a future update. Contact AWP directly to request a quote."
+- **TCP:** "TCP ordering will be available in a future update. An AWP traffic engineer will review your location and deliver a compliant, field-ready plan within 72 hours."
+- **Schedule:** "Job scheduling will be available in a future update. Contact AWP directly to schedule your traffic control setup."
+
+**Download Image:** Icon button `[⬇]` overlaid on the top-right corner of the plan image. `<a download>` — fetches `image_signed_url` and triggers browser download.
+
+**Ask AI about this plan:** Text link below the BOM. Navigates to `/ai?jobId=<id>` — voice agent pre-loaded with this estimate's context.
+
+**Disclaimer banner:** Persistent, non-dismissible. Text: "Draft estimate — for budgeting & planning only. Not a compliant TCP."
 
 **Error messages by `failure_reason`:**
 | `failure_reason` | User-facing message |
@@ -900,7 +896,11 @@ No API route required for POC. Backend implementation is post-POC (see Open Item
 | `job_not_found` | "This estimate could not be found. Please try again." |
 | `unknown` | "Something went wrong. Please try again." |
 
-"Try Again" navigates to `/request/details` with all previous values pre-filled from the doc.
+**"Try Again"** navigates to `/request/details` with all previous values pre-filled from `service1_input.payload`.
+
+**Expired signed URL (edge case):** If the image fails to load (7-day URL expiry), show a "Refresh" button in place of the image. Low priority — implement only if it surfaces during testing.
+
+**PDF:** Not in scope for v1.
 
 ---
 
@@ -1118,7 +1118,7 @@ NEXT_PUBLIC_AWP_AGENT_ID=agent_8301kw2ea0h1ex0af3yjjee8kwef  # AWP Traffic Safet
 | Day | Deliverable |
 |---|---|
 | 6 | `jobs.ts` Firestore subscriptions, Inbox list (`onSnapshot` org query), `JobCard`, `StatusBadge` |
-| 7 | Job detail — image display (pinch-zoom), `BOMDisplay` (all fields including stands/sandbags), Download Image, budgetary disclaimer banner, "Order a TCP" Coming Soon sheet, "Ask AI" button |
+| 7 | `JobDetailSheet.tsx` — full-screen bottom sheet with drag handle; plan image (pinch-zoom, download icon), `BOMDisplay`, Ask AI link, Quote/TCP/Schedule action buttons (all open `ComingSoonSheet` with button-specific copy) |
 | 8 | `/api/elevenlabs/signed-url` route, `VoiceAgent.tsx` component, AI screen (`/ai`) |
 | 9 | AI context from Job Detail (`/ai?jobId=...`), dynamic variables injection, orb animation |
 | 10 | End-to-end smoke test on demo device, mobile CSS polish, error states (failed estimate, network error, expired session) |
