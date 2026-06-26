@@ -1009,8 +1009,8 @@ RELAY_URL=https://tcp-relay.keryk.ai          # server-side only
 SERVICE_AUTH_KEY=                              # added by estimate-proxy route
 
 # Maps
-NEXT_PUBLIC_MAPBOX_TOKEN=                     # Mapbox satellite tile layer (PinMap.tsx)
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=              # geocode fallback (address search in /api/geocode)
+NEXT_PUBLIC_MAPBOX_TOKEN=                     # Mapbox satellite tile layer (PinMap.tsx) — already in Infisical (TCP project)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=              # geocode fallback (address search in /api/geocode) — already in Infisical (TCP project)
 
 # ElevenLabs
 ELEVENLABS_API_KEY=                           # server-side only, never exposed
@@ -1104,7 +1104,7 @@ Per Wade's spec and product decisions:
 | 4 | ~~TA-30/30R/33 auto-detection by pipeline from OSM road geometry~~ | ✅ Confirmed | Relay `derive_ta_code()` uses OSM road type + `selected_lane` from payload. App must send `selected_lane: "left"\|"right"` for lane closures. |
 | 5 | Seed one success + one failure doc in `tcp_estimates_V1` for dev testing | Wade | Needed before Day 6 |
 | 6 | AWP branding assets — logo, primary color, icon files | Morgan / AWP | Needed before Day 1 |
-| 7 | Firebase project config values for mobile app env | Morgan | Needed before Day 1 |
+| 7 | Firebase project config values for mobile app env | Morgan | Needed before Day 1. Map tokens (Mapbox, Google) already in Infisical (TCP project). |
 | 8 | Shoulder closure TA — no TA code exists yet | Wade | Deferred: Shoulder Closure card shows "Coming Soon" in v1; full support post-POC |
 | 9 | "Order a TCP" backend — relay endpoint or new service, Firestore schema for TCP orders, 72-hour SLA fulfillment flow | Wade / Morgan | Post-POC — button shows "Coming Soon" in demo |
 | 10 | Future Feature card — define the next AWP product/feature to build on this platform | Morgan / AWP | Post-POC — static teaser card in demo |
