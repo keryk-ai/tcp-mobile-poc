@@ -6,8 +6,8 @@ const nextConfig: NextConfig = {
     // MAPBOX_TOKEN is server-side in Infisical (matching svc-4-map convention).
     // Expose to client for Leaflet tile layers.
     NEXT_PUBLIC_MAPBOX_TOKEN: process.env.MAPBOX_TOKEN ?? '',
-    // RELAY_URL not in Infisical — default to local relay for dev.
-    RELAY_URL: process.env.RELAY_URL ?? 'http://localhost:4321',
+    // RELAY_URL not in Infisical — default to Coolify dev relay.
+    RELAY_URL: process.env.RELAY_URL ?? 'https://tcp-relay-dev.keryk.ai',
   },
   images: {
     remotePatterns: [

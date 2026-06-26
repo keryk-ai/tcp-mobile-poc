@@ -132,7 +132,7 @@ export default function ReviewPage() {
         {submitting && (
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90">
             <div className="w-12 h-12 rounded-full border-4 border-[hsl(25,100%,50%)] border-t-transparent animate-spin mb-5" />
-            <p className="font-semibold text-gray-900 text-lg">Generating your estimate…</p>
+            <p className="font-semibold text-gray-900 text-lg">Generating your site configuration…</p>
             <p className="text-gray-500 text-sm mt-1">This takes about 3–5 seconds.</p>
           </div>
         )}

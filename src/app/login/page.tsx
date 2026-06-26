@@ -48,7 +48,7 @@ function LoginForm() {
           priority
         />
       </div>
-      <p className="text-gray-500 text-sm mb-10">Traffic Control Plans</p>
+      <p className="text-gray-500 text-sm mb-10">Site Configurator</p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <div>
