@@ -1,0 +1,24 @@
+{
+  "name": "AWP Traffic Plans",
+  "short_name": "TCP Plans",
+  "description": "Request traffic control plan estimates from your phone",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF6B00",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/awp-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/awp-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

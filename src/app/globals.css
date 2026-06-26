@@ -1,0 +1,93 @@
+/* ── AWP Safety Font — Unitext (Official) ────────────────────────────────── */
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-light.otf') format('opentype');
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-regular.otf') format('opentype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-italic.otf') format('opentype');
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-semibold.otf') format('opentype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Unitext';
+  src: url('/fonts/unitext-bold.otf') format('opentype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 6%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 6%;
+    --primary: 25 100% 50%;        /* AWP Orange #FF6B00 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 213 14% 40%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 25 100% 50%;
+    --radius: 0.5rem;
+    --destructive: 0 84.2% 50%;
+    --destructive-foreground: 0 0% 98%;
+  }
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-card: hsl(var(--card));
+  --color-destructive: hsl(var(--destructive));
+  --font-sans: 'Unitext', ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Unitext', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  border-color: hsl(var(--border));
+  box-sizing: border-box;
+}
+
+.leaflet-container {
+  z-index: 0;
+}
+
+/* Bottom sheet animation */
+.sheet-enter {
+  transform: translateY(100%);
+}
+.sheet-enter-active {
+  transform: translateY(0);
+  transition: transform 300ms ease-out;
+}
+.sheet-exit-active {
+  transform: translateY(100%);
+  transition: transform 250ms ease-in;
+}
