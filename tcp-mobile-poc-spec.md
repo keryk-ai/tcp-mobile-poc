@@ -5,6 +5,12 @@
 **Status:** Ready for development  
 **Owners:** Morgan Stern (product), Wade (pipeline/relay), TBD (mobile dev)
 
+**Related documents:**
+- User stories: `mobile-poc-user-stories.md`
+- Agent system prompt: `awp-traffic-safety-ai-system-prompt.md`
+- Agent config snapshot: `elevenlabs-agent-config.json`
+- Brand reference: `globals.reference.css`, `tailwind.reference.mjs`
+
 ---
 
 ## 1. Purpose & Scope
