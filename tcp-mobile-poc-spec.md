@@ -1,6 +1,6 @@
 # TCP Mobile App — POC Specification
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Date:** 2026-06-26  
 **Status:** Ready for development  
 **Owners:** Morgan Stern (product), Wade (pipeline/relay), TBD (mobile dev)
@@ -58,7 +58,7 @@ New standalone repo: **`tcp-mobile-poc`**. Not bolted onto `svc-frontend`. Mobil
 | Framework | Next.js 15, App Router, TypeScript |
 | Styling | Tailwind CSS v4 (mobile-first breakpoints) |
 | Auth | Firebase JS SDK — same project as production |
-| Maps | Leaflet 1.9 + OpenStreetMap (simplified from svc-frontend) |
+| Maps | Leaflet 1.9 + Mapbox Satellite Streets (satellite view) + OpenStreetMap (street view) |
 | Realtime data | Firebase Firestore `onSnapshot()` |
 | Voice AI | `@11labs/react` — `useConversation()` hook |
 | HTTP | `fetch` with typed wrappers |
@@ -181,19 +181,17 @@ Content-Type: application/json
 {
   workOrderId: string;          // user-entered WO# (e.g., "WO-2024-001")
   segmentId:   string;          // same as workOrderId or generate uuid
-  client:      string;          // user's company name (informational)
+  client:      string;          // customer_org from Firebase custom claim (e.g., "lumos")
   work: {
-    taNumber:     string;       // derived — see TA Logic section
-    description:  string;       // human-readable (e.g., "Lane Closure — TA-33")
+    description:  string;       // "Flagging Operation" | "Lane Closure" | "Shoulder Closure"
+    taNumber:     string | null; // "ta-10" for flagging; null for lane closure (relay derives from OSM)
     duration:     "Short-Term";
     timeOfDay:    "Day" | "Night";
-    workLocation: "left" | "right";   // closed lane side
-    lanesClosed:  1;
     constructionType: string;   // "underground" | "overhead" | "other"
     isRoadCrossing:   false;
     dynamicFields: {
-      direction:     string;    // "Northbound" | "Southbound" | "Eastbound" | "Westbound"
-      selected_lane?: string;   // "left" | "right" (TA-33 only)
+      direction:      string;   // "Northbound" | "Southbound" | "Eastbound" | "Westbound"
+      selected_lane?: "left" | "right"; // lane closure only — relay uses this to resolve TA-30 vs TA-30R
     }
   };
   location: {
@@ -204,6 +202,14 @@ Content-Type: application/json
     address:  string;           // user-entered work address
   };
 }
+```
+
+**Per work type:**
+| Work Type | `taNumber` | `selected_lane` |
+|---|---|---|
+| Flagging | `"ta-10"` | omitted |
+| Lane Closure | `null` | `"left"` or `"right"` (required — determines TA-30 vs TA-30R vs TA-33) |
+| Shoulder Closure | Coming Soon — not supported in v1 | — |
 ```
 
 **Success response (200, sync ~3–5s):**
@@ -342,42 +348,53 @@ const isFailed  = doc.estimate_response?.status === 'failed';
 
 ## 7. TA Derivation Logic
 
-The user selects one of three work types. The app sends the work type and direction to the relay; **the pipeline auto-detects the specific TA code from road geometry** (OSM data). The user never selects a TA code directly, and does not need to know whether the road has a median.
+The user selects a work type and, for lane closures, which lane is being closed. The relay then derives the exact TA code by combining the user's lane selection with OSM road geometry from the pin coordinates.
 
 ### Work types (user-facing)
 
-| User selection | `workType` sent to relay | TA resolved by pipeline |
-|---|---|---|
-| Flagging | `"flagging"` | `ta-10` (always) |
-| Lane Closure | `"lane-closure"` | `ta-30`, `ta-30r`, or `ta-33` — pipeline detects from OSM road geometry |
-| Shoulder Closure | `"shoulder-closure"` | `ta-shoulder` (TBD — see Open Item #8) |
+| User selection | `taNumber` sent | TA resolved by | Notes |
+|---|---|---|---|
+| Flagging | `"ta-10"` | Client (deterministic) | Always TA-10 |
+| Lane Closure | `null` | Relay (OSM geometry + `selected_lane`) | Relay resolves TA-30, TA-30R, or TA-33 |
+| Shoulder Closure | — | Not supported in v1 | Card opens ComingSoonSheet |
 
-**Pipeline TA resolution for lane closure:**
-- **TA-30**: Left lane closure, two-lane road without median
-- **TA-30R**: Right lane closure, two-lane road without median
-- **TA-33**: Either lane, divided highway with median — dual sign deployment (shoulder + median)
+**Relay TA resolution for lane closure (from `relay.py: derive_ta_code()`):**
+- `road_type=multi-lane-road + selected_lane=left` → **TA-30** (left lane closure, undivided road)
+- `road_type=multi-lane-road + selected_lane=right` → **TA-30R** (right lane closure, undivided road)
+- `road_type=divided-highway or freeway` → **TA-33** (either lane; dual sign deployment — shoulder + median)
 
-The pipeline determines median presence and lane position from the pin coordinates and OSM road data. The app does not ask the user about road geometry.
+The relay reads road type from OSM via the geocoder at the pin coordinates. The app sends `selected_lane` so the relay can distinguish TA-30 from TA-30R on undivided roads. The app does **not** ask the user about median presence — TA-33 is derived entirely from road geometry.
 
-### `taLogic.ts` (simplified — work type only)
+### `taLogic.ts`
 
 ```typescript
-type WorkType = 'flagging' | 'lane-closure' | 'shoulder-closure';
+type WorkType = 'flagging' | 'lane-closure';
+type LaneSide = 'left' | 'right';
 
-export function buildWorkTypePayload(workType: WorkType, direction: string) {
+export function buildEstimateWork(
+  workType: WorkType,
+  direction: string,
+  selectedLane?: LaneSide,
+) {
+  if (workType === 'flagging') {
+    return {
+      description:     'Flagging Operation',
+      taNumber:        'ta-10',
+      duration:        'Short-Term',
+      isRoadCrossing:  false,
+      dynamicFields:   { direction },
+    };
+  }
+  // Lane closure — relay derives TA from OSM + selected_lane
   return {
-    workType,
-    work: {
-      duration:    'Short-Term',
-      direction,
-      // taNumber resolved server-side by pipeline for lane-closure and shoulder-closure
-      ...(workType === 'flagging' && { taNumber: 'ta-10', workLocation: 'right' }),
-    }
+    description:     'Lane Closure',
+    taNumber:        null,
+    duration:        'Short-Term',
+    isRoadCrossing:  false,
+    dynamicFields:   { direction, selected_lane: selectedLane },
   };
 }
 ```
-
-> **Note:** For flagging, `ta-10` is deterministic so the app sets it directly. For lane closure and shoulder closure, `taNumber` is omitted from the client payload and set by the relay after OSM analysis. Confirm exact payload contract with Wade (Open Item #8).
 
 ---
 
@@ -570,10 +587,36 @@ All fields required. Address is free-text (geocoded in Step 2 when user places p
 
 Distance and direction auto-calculate from pin positions using `mapUtils.ts` (Haversine + bearing). Map auto-centers on geocoded address from Step 1 on mount.
 
+**Tile layers:** Street view uses OpenStreetMap tiles (free, no key). Satellite view uses Mapbox Satellite Streets (`mapbox/satellite-streets-v12`) via `NEXT_PUBLIC_MAPBOX_TOKEN`. Mapbox was chosen over Google Maps for better Leaflet integration (standard tile URL pattern, no separate SDK), a generous free tier (50k loads/month), and predictable billing if production usage grows. The `[Street] [Satellite]` toggle switches between tile providers at runtime — no page reload.
+
 ---
 
 ### Screen: Request — Step 3 (Work Type)
 
+Default state (no selection):
+```
+┌────────────────────────────────┐
+│ ←   Request an Estimate        │
+│  ●────●────●────○              │
+│────────────────────────────────│
+│                                │
+│  Work Type                     │
+│  ┌──────────────────────────┐  │
+│  │  🚩  Flagging            │  │
+│  └──────────────────────────┘  │
+│  ┌──────────────────────────┐  │
+│  │  🚧  Lane Closure        │  │
+│  └──────────────────────────┘  │
+│  ┌──────────────────────────┐  │
+│  │  🛞  Shoulder Closure    │  │  ← opens ComingSoonSheet on tap
+│  │              Coming Soon │  │
+│  └──────────────────────────┘  │
+│────────────────────────────────│
+│  ...                           │
+└────────────────────────────────┘
+```
+
+Lane Closure selected (reveals lane and direction fields):
 ```
 ┌────────────────────────────────┐
 │ ←   Request an Estimate        │
@@ -589,17 +632,18 @@ Distance and direction auto-calculate from pin positions using `mapUtils.ts` (Ha
 │  └──────────────────────────┘  │
 │  ┌──────────────────────────┐  │
 │  │  🛞  Shoulder Closure    │  │
+│  │              Coming Soon │  │
 │  └──────────────────────────┘  │
 │────────────────────────────────│
+│  Which lane is being closed?   │
+│  ┌──────────┐  ┌────────────┐  │
+│  │ ● Left   │  │  ○ Right   │  │
+│  └──────────┘  └────────────┘  │
+│                                │
 │  Direction of travel:          │
 │  ┌──────────────────────────┐  │
-│  │  Northbound            ▾ │  │
+│  │  Northbound            ▾ │  │  ← pre-filled from Step 2 bearing
 │  └──────────────────────────┘  │
-│                                │
-│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   │
-│  ⓘ Plan type will be           │
-│     determined from road data  │  ← replaces manual TA preview
-│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   │
 │                                │
 │  ┌──────────────────────────┐  │
 │  │          Next →          │  │
@@ -607,9 +651,13 @@ Distance and direction auto-calculate from pin positions using `mapUtils.ts` (Ha
 └────────────────────────────────┘
 ```
 
-Three work types: **Flagging**, **Lane Closure**, **Shoulder Closure**. The pipeline auto-detects the specific TA code (TA-30, TA-30R, TA-33, etc.) from road geometry — the user does not select a median type or lane side.
+Two selectable work types: **Flagging** and **Lane Closure**. **Shoulder Closure** is visible but disabled — tapping it opens `ComingSoonSheet` (no TA code exists yet; planned for a future release).
 
-Direction options: Northbound / Southbound / Eastbound / Westbound. Pre-populated from the bearing calculated in Step 2 (can be overridden). Direction is collected for all three work types.
+**Lane Closure:** Reveals a "Which lane?" toggle (Left / Right). The relay uses this (`selected_lane`) along with OSM road geometry to resolve TA-30, TA-30R, or TA-33 — the user never sees raw TA codes at this step.
+
+**Flagging:** No lane toggle shown. TA-10 is deterministic; direction is the only additional field.
+
+**Direction:** Pre-populated from the bearing auto-calculated in Step 2 (A→B vector → cardinal direction). User can override. Direction is collected for both work types.
 
 ---
 
@@ -631,6 +679,7 @@ Direction options: Northbound / Southbound / Eastbound / Westbound. Pre-populate
 │  Time         Day              │
 │  Construction Underground      │
 │  Work Type    Lane Closure     │
+│  Lane         Left             │  ← shown for lane closure only
 │  Direction    Northbound       │
 │  Distance     850 ft           │
 │────────────────────────────────│
@@ -960,7 +1009,8 @@ RELAY_URL=https://tcp-relay.keryk.ai          # server-side only
 SERVICE_AUTH_KEY=                              # added by estimate-proxy route
 
 # Maps
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=              # geocode fallback
+NEXT_PUBLIC_MAPBOX_TOKEN=                     # Mapbox satellite tile layer (PinMap.tsx)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=              # geocode fallback (address search in /api/geocode)
 
 # ElevenLabs
 ELEVENLABS_API_KEY=                           # server-side only, never exposed
@@ -1038,6 +1088,7 @@ Per Wade's spec and product decisions:
 - GPS-based start pin (Phase 2)
 - Signed URL refresh endpoint (implement only if edge case surfaces during testing)
 - BOM download as CSV/PDF
+- Shoulder Closure work type — card is visible but opens "Coming Soon" sheet; no TA code exists yet in the relay; full support post-POC (Open Item #8)
 - TCP order backend — "Order a TCP" button shows "Coming Soon" in POC; full ordering flow (API, fulfillment, status tracking) is post-POC (Open Item #9)
 - Future Feature card backend — home screen teaser card is a static Coming Soon placeholder; actual feature TBD by AWP
 
@@ -1050,11 +1101,11 @@ Per Wade's spec and product decisions:
 | 1 | ~~Create AWP Traffic Safety AI agent in ElevenLabs~~ | ✅ Done | `agent_id: agent_8301kw2ea0h1ex0af3yjjee8kwef` → `NEXT_PUBLIC_AWP_AGENT_ID` |
 | 2 | Confirm Firebase custom claims provisioning flow for `customer_org` | Morgan → Wade | Blocking Firestore security rules |
 | 3 | Confirm per-org scoping (`customer_org` field) | Morgan → Wade | Blocking Firestore security rules |
-| 4 | TA-30/30R/33 auto-detection by pipeline from OSM road geometry | Wade | Blocking lane closure plan accuracy — confirm pipeline capability |
+| 4 | ~~TA-30/30R/33 auto-detection by pipeline from OSM road geometry~~ | ✅ Confirmed | Relay `derive_ta_code()` uses OSM road type + `selected_lane` from payload. App must send `selected_lane: "left"\|"right"` for lane closures. |
 | 5 | Seed one success + one failure doc in `tcp_estimates_V1` for dev testing | Wade | Needed before Day 6 |
 | 6 | AWP branding assets — logo, primary color, icon files | Morgan / AWP | Needed before Day 1 |
 | 7 | Firebase project config values for mobile app env | Morgan | Needed before Day 1 |
-| 8 | Shoulder closure TA selection and relay payload contract (`taNumber` value, any additional fields) | Wade | Blocking shoulder closure submission |
+| 8 | Shoulder closure TA — no TA code exists yet | Wade | Deferred: Shoulder Closure card shows "Coming Soon" in v1; full support post-POC |
 | 9 | "Order a TCP" backend — relay endpoint or new service, Firestore schema for TCP orders, 72-hour SLA fulfillment flow | Wade / Morgan | Post-POC — button shows "Coming Soon" in demo |
 | 10 | Future Feature card — define the next AWP product/feature to build on this platform | Morgan / AWP | Post-POC — static teaser card in demo |
 
