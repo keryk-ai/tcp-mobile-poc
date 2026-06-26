@@ -1,7 +1,7 @@
 # AWP Traffic Safety AI — ElevenLabs Agent System Prompt
 
 **Agent Name:** AWP Traffic Safety AI  
-**Version:** 1.0  
+**Version:** 1.3  
 **Date:** 2026-06-26  
 **Use:** Mobile POC — conversational voice guidance for AWP enterprise customers  
 
