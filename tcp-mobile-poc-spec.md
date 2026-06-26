@@ -973,33 +973,74 @@ export function VoiceAgent({ jobContext }: { jobContext?: EstimateContext }) {
       body: JSON.stringify({ agentId: AWP_AGENT_ID, tenantId: 'awp' })
     }).then(r => r.json());
 
-    await conversation.startSession({
-      signedUrl,
-      dynamicVariables: {
-        user_name:           user.displayName,
-        user_email:          user.email,
-        customer_org:        user.token.org,
-        // job context (when launched from detail screen)
-        current_work_order:  jobContext?.workOrderId  ?? '',
-        current_ta_code:     jobContext?.taNumber     ?? '',
-        current_address:     jobContext?.address      ?? '',
-        current_bom_summary: jobContext?.bomSummary   ?? '',
-      }
-    });
+    try {
+      await conversation.startSession({
+        signedUrl,
+        // Override first_message when launched from a job — agent greets with job context
+        ...(jobContext && {
+          overrides: {
+            agent: {
+              firstMessage: `Hi ${user.displayName}! I can see you're looking at work order ${jobContext.workOrderId} — a ${jobContext.taCode} plan at ${jobContext.address}. What questions do you have?`,
+            }
+          }
+        }),
+        dynamicVariables: {
+          user_name:           user.displayName ?? '',
+          user_email:          user.email       ?? '',
+          customer_org:        user.token.org   ?? '',
+          current_work_order:  jobContext?.workOrderId       ?? '',
+          current_ta_code:     jobContext?.taCode            ?? '',
+          current_address:     jobContext?.address           ?? '',
+          current_bom_summary: jobContext ? formatBomSummary(jobContext.bom) : '',
+        }
+      });
+    } catch (err) {
+      // Mic permission denied or WebSocket failure
+      setError(err instanceof Error ? err.message : 'Could not start session');
+    }
   };
   // ...
 }
 ```
 
-### Agent setup (pre-dev task)
+**`formatBomSummary(bom: BOMResult): string`** — converts structured BOM to a single spoken line injected as `current_bom_summary`:
+```typescript
+export function formatBomSummary(bom: BOMResult): string {
+  const t = bom.totals;
+  const parts = [
+    `${t.signCount} signs`,
+    `${t.deviceCount} devices`,
+    `${t.coneCount} cones`,
+    `${t.standCount} stands`,
+    `${t.sandbagCount} sandbags`,
+    ...(t.flaggerCount > 0 ? [`${t.flaggerCount} flaggers`] : []),
+  ];
+  return parts.join(', ');
+  // → "12 signs, 4 devices, 80 cones, 8 stands, 16 sandbags"
+}
+```
 
-A new ElevenLabs agent must be created for this project before the AI screen can be built. Required configuration:
-- **Agent name:** AWP Traffic Safety AI
-- **System prompt:** Focused on MUTCD standards, TCP work zone guidance, TA plan questions
-- **Voice:** TBD (select from existing ElevenLabs voices)
-- **Dynamic variable references:** `{{user_name}}`, `{{customer_org}}`, `{{current_ta_code}}`, `{{current_address}}`, `{{current_bom_summary}}`
+**Mic permission error state:** If `startSession()` throws (mic denied, WebSocket failure), the AI screen shows:
+```
+┌────────────────────────────────┐
+│                                │
+│         🎙                     │
+│                                │
+│   Microphone access required   │
+│                                │
+│   Allow microphone access in   │
+│   your browser settings to     │
+│   use the AI assistant.        │
+│                                │
+│  ┌──────────────────────────┐  │
+│  │   Try Again              │  │
+│  └──────────────────────────┘  │
+└────────────────────────────────┘
+```
 
-Once created, the `elevenLabsAgentId` is stored as `NEXT_PUBLIC_AWP_AGENT_ID` in env config.
+### Agent setup
+
+Agent is created: `agent_8301kw2ea0h1ex0af3yjjee8kwef` — system prompt v1.4, all 7 dynamic variables configured. Stored as `NEXT_PUBLIC_AWP_AGENT_ID`. See `awp-traffic-safety-ai-system-prompt.md` and `elevenlabs-agent-config.json`.
 
 ---
 
