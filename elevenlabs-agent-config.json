@@ -1,0 +1,24 @@
+{
+  "_note": "Canonical agent config snapshot — agent_8301kw2ea0h1ex0af3yjjee8kwef. Do not commit secrets. secret__authorization placeholder only.",
+  "agent_id": "agent_8301kw2ea0h1ex0af3yjjee8kwef",
+  "name": "Mobile-App-Ai",
+  "version_id": "agtvrsn_1901kw2hm6mpe26vfppjj6x55hka",
+  "tools": ["searchDocumentation", "callAPI", "getCurrentWeather", "showReferenceImage"],
+  "knowledge_base": [
+    "ta-selection-ped-bike.txt",
+    "ta-selection-full-closure.txt",
+    "ta-selection-intersection.txt",
+    "work-zone-specialist.txt",
+    "TA-SELECTION-HEURISTIC.txt",
+    "ta-selection-freeway.txt",
+    "ta-selection-multi-lane.txt",
+    "ta-selection-shoulder.txt",
+    "ta-selection-two-lane.txt"
+  ],
+  "llm": "gpt-5",
+  "reasoning_effort": "minimal",
+  "voice_id": "zGjIP4SZlMnY9m93k97r",
+  "dynamic_variables": ["user_name", "user_email", "customer_org", "current_work_order", "current_ta_code", "current_address", "current_bom_summary"],
+  "first_message_default": "Hi, how can I help you?",
+  "first_message_note": "Override per-session via conversation_initiation_client_data when launching from a job detail screen — see VoiceAgent.tsx notes"
+}
