@@ -208,6 +208,12 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
               {/* Actions */}
               <div className="px-4 pb-4 space-y-3">
                 <button
+                  onClick={() => setComingSoon({ title: 'Coming Soon', message: 'Site risk analysis will be available in a future update. AWP will automatically identify hazards, flag compliance issues, and recommend mitigations for your location.' })}
+                  className="w-full py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
+                >
+                  Analyze Site Risks
+                </button>
+                <button
                   onClick={() => setComingSoon({ title: 'Coming Soon', message: 'Pricing quotes will be available in a future update. Contact AWP directly to request a quote.' })}
                   className="w-full py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
                 >
