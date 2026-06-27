@@ -97,7 +97,7 @@ export default function HomePage() {
       const lat = input.location?.startLat;
       const lng = input.location?.startLon;
       if (lat && lng) {
-        result.push({ lat, lng, label: String(result.length + 1) });
+        result.push({ lat, lng, label: String(result.length + 1), jobId: job.id });
       }
     }
     return result;
@@ -107,13 +107,16 @@ export default function HomePage() {
     <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
       <header className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 border-b border-gray-100 bg-white z-10">
-        <Image
-          src="/awp-logo-horizontal.jpg"
-          alt="AWP Safety"
-          width={100}
-          height={30}
-          className="object-contain"
-        />
+        <div className="flex flex-col gap-0.5">
+          <Image
+            src="/awp-logo-horizontal.jpg"
+            alt="AWP Safety"
+            width={100}
+            height={30}
+            className="object-contain"
+          />
+          <span className="text-[10px] font-semibold text-gray-400 tracking-wide uppercase leading-none">Traffic Safety Assistant</span>
+        </div>
         <div className="flex items-center gap-2 relative">
           <div className="text-right mr-1">
             <div className="text-xs font-semibold text-gray-900">Hi, {displayName}</div>
@@ -150,7 +153,7 @@ export default function HomePage() {
 
       {/* Site Map */}
       <div className="relative h-[40vh] w-full border-b border-gray-200">
-        <SiteMapView pins={pins} />
+        <SiteMapView pins={pins} onPinClick={(jobId) => setActiveJobId(jobId)} />
         {/* Map overlay CTA */}
         <button
           onClick={() => { clearFormState(); router.push('/request/details'); }}
