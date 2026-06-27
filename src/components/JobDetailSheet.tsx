@@ -177,25 +177,25 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
                   )}
 
                   <div className="mt-2 space-y-1">
-                    {bom.totals.coneCount > 0 && (
+                    {(bom.totals.coneCount ?? 0) > 0 && (
                       <div className="flex justify-between text-sm py-1 border-b border-gray-50">
                         <span className="text-gray-700">Cones</span>
                         <span className="font-semibold text-gray-900">{bom.totals.coneCount}</span>
                       </div>
                     )}
-                    {bom.totals.standCount > 0 && (
+                    {(bom.totals.standCount ?? 0) > 0 && (
                       <div className="flex justify-between text-sm py-1 border-b border-gray-50">
                         <span className="text-gray-700">Sign Stands</span>
                         <span className="font-semibold text-gray-900">{bom.totals.standCount}</span>
                       </div>
                     )}
-                    {bom.totals.sandbagCount > 0 && (
+                    {(bom.totals.sandbagCount ?? 0) > 0 && (
                       <div className="flex justify-between text-sm py-1 border-b border-gray-50">
                         <span className="text-gray-700">Sandbags</span>
                         <span className="font-semibold text-gray-900">{bom.totals.sandbagCount}</span>
                       </div>
                     )}
-                    {bom.totals.flaggerCount > 0 && (
+                    {(bom.totals.flaggerCount ?? 0) > 0 && (
                       <div className="flex justify-between text-sm py-1 border-b border-gray-50">
                         <span className="text-gray-700">Flaggers</span>
                         <span className="font-semibold text-gray-900">{bom.totals.flaggerCount}</span>
