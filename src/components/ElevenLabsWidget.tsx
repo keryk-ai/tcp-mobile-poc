@@ -3,8 +3,7 @@
 import { useId, useMemo } from 'react';
 import Script from 'next/script';
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       'elevenlabs-convai': React.DetailedHTMLProps<
