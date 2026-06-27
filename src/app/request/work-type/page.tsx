@@ -135,6 +135,24 @@ export default function WorkTypePage() {
         )}
       </div>
 
+      {/* AI help link */}
+      <div className="px-4 pb-6 flex justify-center">
+        <button
+          type="button"
+          onClick={() => {
+            const widget = document.querySelector('elevenlabs-convai') as HTMLElement | null;
+            widget?.click();
+          }}
+          className="flex items-center gap-1.5 text-sm text-[hsl(25,100%,50%)] font-medium"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8" />
+          </svg>
+          Not sure? Ask the AWP AI Expert
+        </button>
+      </div>
+
       <ComingSoonSheet
         isOpen={showShoulderSheet}
         onClose={() => setShowShoulderSheet(false)}
