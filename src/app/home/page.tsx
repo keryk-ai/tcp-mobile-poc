@@ -87,17 +87,17 @@ export default function HomePage() {
   }, [user]);
 
   // Build map pins from first 5 jobs that have coordinates
+  // Pins: 5 most recent successful jobs with coordinates (jobs already sorted desc by created_at)
   const pins = useMemo<SitePin[]>(() => {
-    let count = 0;
     const result: SitePin[] = [];
     for (const job of jobs) {
-      if (count >= 5) break;
+      if (result.length >= 5) break;
+      if (getJobStatus(job) !== 'success') continue;
       const input = parseJobInput(job);
       const lat = input.location?.startLat;
       const lng = input.location?.startLon;
       if (lat && lng) {
-        count++;
-        result.push({ lat, lng, label: String(count) });
+        result.push({ lat, lng, label: String(result.length + 1) });
       }
     }
     return result;
