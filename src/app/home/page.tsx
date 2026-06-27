@@ -289,7 +289,7 @@ export default function HomePage() {
         isOpen={showFutureFeature}
         onClose={() => setShowFutureFeature(false)}
         title="Coming Soon"
-        message="AWP is building more tools on this platform. Upcoming features include permit management, inspector scheduling, compliance documentation, and more."
+        message="AWP is building more tools on this platform. Upcoming features include AI field assistants, automated site risk analysis, schedule optimization, permit management, compliance documentation, and more."
       />
 
       {/* Backdrop behind agent widget during active call */}
