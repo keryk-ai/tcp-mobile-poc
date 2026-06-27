@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 import withPWA from '@ducanh2912/next-pwa';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   env: {
     // MAPBOX_TOKEN is server-side in Infisical (matching svc-4-map convention).
     // Expose to client for Leaflet tile layers.

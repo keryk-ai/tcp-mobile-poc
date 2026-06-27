@@ -226,7 +226,7 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
                   onClick={() => setComingSoon({ title: 'Coming Soon', message: 'TCP ordering will be available in a future update. An AWP traffic engineer will review your location and deliver a compliant, field-ready plan within 72 hours.' })}
                   className="w-full py-3.5 rounded-xl bg-[hsl(25,100%,50%)] text-white font-semibold text-sm"
                 >
-                  📋 Order a Reviewed TCP
+                  📋 Request a TCP
                 </button>
                 <button
                   onClick={() => setComingSoon({ title: 'Coming Soon', message: 'Job scheduling will be available in a future update. Contact AWP directly to schedule your traffic control setup.' })}
