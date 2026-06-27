@@ -90,12 +90,21 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 flex-shrink-0">
-          <div>
-            <div className="font-bold text-gray-900 text-base">
+        <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 shrink-0 active:bg-gray-200"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-gray-900 text-base truncate">
               {input.workOrderId || jobId.slice(0, 8)}
             </div>
-            <div className="text-xs text-gray-500">{input.location?.address || ''}</div>
+            <div className="text-xs text-gray-500 truncate">{input.location?.address || ''}</div>
           </div>
           <StatusBadge status={status} small />
         </div>

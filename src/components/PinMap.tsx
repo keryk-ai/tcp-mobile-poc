@@ -65,18 +65,24 @@ export default function PinMap({ initialCenter, initialPinA, initialPinB, onPins
   }
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     let L: typeof import('leaflet');
 
     const init = async () => {
       L = (await import('leaflet')).default;
 
+      if (mapRef.current) return; // StrictMode second invoke — already initialized
+
+      // Clear any stale Leaflet internal state left on the DOM element
+      (container as any)._leaflet_id = undefined;
+
       const center: [number, number] = initialCenter
         ? [initialCenter.lat, initialCenter.lng]
         : [35.2271, -80.8431];
 
-      const map = L.map(containerRef.current!, { center, zoom: 15, zoomControl: true });
+      const map = L.map(container, { center, zoom: 15, zoomControl: true });
       mapRef.current = map;
 
       const osmLayer = L.tileLayer(OSM_URL, { attribution: OSM_ATTR, maxZoom: 19 });
@@ -127,6 +133,7 @@ export default function PinMap({ initialCenter, initialPinA, initialPinB, onPins
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
+      (container as any)._leaflet_id = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
