@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "infisical run -- next dev",
     "build": "infisical run -- next build",
+    "build:docker": "next build",
     "start": "infisical run -- next start",
     "lint": "next lint"
   },
