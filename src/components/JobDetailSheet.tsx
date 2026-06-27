@@ -207,32 +207,23 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
 
               {/* Actions */}
               <div className="px-4 pb-4 space-y-3">
-                {doc.estimate_response.image_signed_url && (
-                  <a
-                    href={doc.estimate_response.image_signed_url}
-                    download={`tcp-${jobId.slice(0, 8)}.${doc.estimate_response.image_storage_path?.split('.').pop() ?? 'jpg'}`}
-                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
-                  >
-                    ⬇ Download Image
-                  </a>
-                )}
                 <button
                   onClick={() => setComingSoon({ title: 'Coming Soon', message: 'Pricing quotes will be available in a future update. Contact AWP directly to request a quote.' })}
                   className="w-full py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
                 >
-                  💰 Quote
+                  Request a Quote
                 </button>
                 <button
                   onClick={() => setComingSoon({ title: 'Coming Soon', message: 'TCP ordering will be available in a future update. An AWP traffic engineer will review your location and deliver a compliant, field-ready plan within 72 hours.' })}
                   className="w-full py-3.5 rounded-xl bg-[hsl(25,100%,50%)] text-white font-semibold text-sm"
                 >
-                  📋 Request a TCP
+                  Request a TCP
                 </button>
                 <button
                   onClick={() => setComingSoon({ title: 'Coming Soon', message: 'Job scheduling will be available in a future update. Contact AWP directly to schedule your traffic control setup.' })}
                   className="w-full py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
                 >
-                  📅 Schedule
+                  Schedule a Crew
                 </button>
               </div>
 

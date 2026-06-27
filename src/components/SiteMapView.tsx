@@ -7,11 +7,12 @@ export interface SitePin {
   lat: number;
   lng: number;
   label: string;
+  jobId?: string;
 }
 
 const DEFAULT_CENTER: [number, number] = [35.2271, -80.8431]; // Charlotte, NC
 
-export default function SiteMapView({ pins }: { pins: SitePin[] }) {
+export default function SiteMapView({ pins, onPinClick }: { pins: SitePin[]; onPinClick?: (jobId: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import('leaflet').Map | null>(null);
   const markersRef = useRef<import('leaflet').Marker[]>([]);
@@ -84,7 +85,11 @@ export default function SiteMapView({ pins }: { pins: SitePin[] }) {
         iconSize: [24, 24],
         iconAnchor: [12, 12],
       });
-      return L.marker([pin.lat, pin.lng], { icon }).addTo(map);
+      const marker = L.marker([pin.lat, pin.lng], { icon }).addTo(map);
+      if (onPinClick && pin.jobId) {
+        marker.on('click', () => onPinClick(pin.jobId!));
+      }
+      return marker;
     });
 
     markersRef.current = newMarkers;
@@ -95,7 +100,7 @@ export default function SiteMapView({ pins }: { pins: SitePin[] }) {
       const group = L.featureGroup(newMarkers);
       map.fitBounds(group.getBounds().pad(0.25));
     }
-  }, [mapReady, pins]);
+  }, [mapReady, pins, onPinClick]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }
