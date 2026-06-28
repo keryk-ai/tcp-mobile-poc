@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import ScheduleCalendarSheet from './ScheduleCalendarSheet';
 import type { EstimateDoc } from '@/types/estimate';
 import { getJobStatus, parseJobInput } from '@/types/estimate';
 import StatusBadge from './StatusBadge';
@@ -25,6 +26,7 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
   const [doc, setDoc] = useState<EstimateDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [comingSoon, setComingSoon] = useState<{ title: string; message: string } | null>(null);
+  const [showSchedule, setShowSchedule] = useState(false);
   const unsubRef = useRef<(() => void) | null>(null);
   const startYRef = useRef(0);
 
@@ -226,7 +228,7 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
                   Request a TCP
                 </button>
                 <button
-                  onClick={() => setComingSoon({ title: 'Coming Soon', message: 'Job scheduling will be available in a future update. Contact AWP directly to schedule your traffic control setup.' })}
+                  onClick={() => setShowSchedule(true)}
                   className="w-full py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
                 >
                   Schedule a Crew
@@ -268,6 +270,10 @@ export default function JobDetailSheet({ isOpen, onClose, jobId }: JobDetailShee
           title={comingSoon.title}
           message={comingSoon.message}
         />
+      )}
+
+      {showSchedule && (
+        <ScheduleCalendarSheet onClose={() => setShowSchedule(false)} />
       )}
 
       <style jsx>{`
