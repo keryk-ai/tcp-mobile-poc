@@ -8,6 +8,7 @@ import { useAuth } from '@/components/AuthContext';
 import ComingSoonSheet from '@/components/ComingSoonSheet';
 import JobDetailSheet from '@/components/JobDetailSheet';
 import DemoSiteSheet from '@/components/DemoSiteSheet';
+import NotificationSheet from '@/components/NotificationSheet';
 import StatusBadge from '@/components/StatusBadge';
 import ElevenLabsWidget from '@/components/ElevenLabsWidget';
 import type { EstimateDoc } from '@/types/estimate';
@@ -16,6 +17,7 @@ import { getFirestoreDb } from '@/lib/firebase';
 import { clearFormState } from '@/lib/formState';
 import type { SitePin } from '@/components/SiteMapView';
 import { DEMO_SITES, type DemoSite } from '@/lib/demoData';
+import { MOCK_NOTIFICATIONS } from '@/lib/notifications';
 
 const SiteMapView = dynamic(() => import('@/components/SiteMapView'), {
   ssr: false,
@@ -34,6 +36,10 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'new' | 'scheduled' | 'completed'>('new');
   const [showFutureFeature, setShowFutureFeature] = useState(false);
   const [showThirdPartyFeature, setShowThirdPartyFeature] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [readNotifIds, setReadNotifIds] = useState<Set<string>>(new Set());
+
+  const unreadCount = MOCK_NOTIFICATIONS.filter(n => !readNotifIds.has(n.id)).length;
   const [showLogoutMenu, setShowLogoutMenu] = useState(false);
   const [userOrg, setUserOrg] = useState('');
   const [agentActive, setAgentActive] = useState(false);
@@ -132,6 +138,23 @@ export default function HomePage() {
           <span className="text-[10px] font-semibold text-gray-400 tracking-wide uppercase leading-none">Traffic Safety Assistant</span>
         </div>
         <div className="flex items-center gap-2 relative">
+          {/* Notification bell */}
+          <button
+            onClick={() => setShowNotifications(true)}
+            className="relative w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 active:bg-gray-200"
+            aria-label="Notifications"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 17H9m6 0a2 2 0 01-4 0m4 0H9m6 0V11a6 6 0 10-12 0v6m12 0H9" />
+              <path d="M18 8a6 6 0 00-12 0v6l-1.5 1.5h15L18 14V8z" strokeLinejoin="round" />
+            </svg>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[hsl(25,100%,50%)] text-white text-[9px] font-bold flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
           <div className="text-right mr-1">
             <div className="text-xs font-semibold text-gray-900">Hi, {displayName}</div>
             {userOrg && (
@@ -377,6 +400,17 @@ export default function HomePage() {
         <DemoSiteSheet
           site={activeDemoSite}
           onClose={() => setActiveDemoSite(null)}
+        />
+      )}
+
+      {showNotifications && (
+        <NotificationSheet
+          onClose={() => setShowNotifications(false)}
+          readIds={readNotifIds}
+          onReadAll={() => setReadNotifIds(new Set(MOCK_NOTIFICATIONS.map(n => n.id)))}
+          onMarkRead={(id) => setReadNotifIds(prev => new Set([...prev, id]))}
+          onOpenDemoSite={(site) => setActiveDemoSite(site)}
+          demoSites={DEMO_SITES}
         />
       )}
 
