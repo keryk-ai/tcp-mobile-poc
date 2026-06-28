@@ -8,6 +8,7 @@ export interface SitePin {
   lng: number;
   label: string;
   jobId?: string;
+  color?: string;
 }
 
 const DEFAULT_CENTER: [number, number] = [35.2271, -80.8431]; // Charlotte, NC
@@ -81,7 +82,7 @@ export default function SiteMapView({ pins, onPinClick }: { pins: SitePin[]; onP
     const newMarkers = pins.map((pin) => {
       const icon = L.divIcon({
         className: '',
-        html: `<div style="width:24px;height:24px;border-radius:50%;background:#FF6B00;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:700;font-family:sans-serif">${pin.label}</div>`,
+        html: `<div style="width:24px;height:24px;border-radius:50%;background:${pin.color ?? '#FF6B00'};border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:700;font-family:sans-serif">${pin.label}</div>`,
         iconSize: [24, 24],
         iconAnchor: [12, 12],
       });
