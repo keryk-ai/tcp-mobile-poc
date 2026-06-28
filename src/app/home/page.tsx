@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useAuth } from '@/components/AuthContext';
 import ComingSoonSheet from '@/components/ComingSoonSheet';
 import JobDetailSheet from '@/components/JobDetailSheet';
+import DemoSiteSheet from '@/components/DemoSiteSheet';
 import StatusBadge from '@/components/StatusBadge';
 import ElevenLabsWidget from '@/components/ElevenLabsWidget';
 import type { EstimateDoc } from '@/types/estimate';
@@ -14,6 +15,7 @@ import { getJobStatus, parseJobInput, formatOrg } from '@/types/estimate';
 import { getFirestoreDb } from '@/lib/firebase';
 import { clearFormState } from '@/lib/formState';
 import type { SitePin } from '@/components/SiteMapView';
+import { DEMO_SITES, type DemoSite } from '@/lib/demoData';
 
 const SiteMapView = dynamic(() => import('@/components/SiteMapView'), {
   ssr: false,
@@ -28,7 +30,10 @@ export default function HomePage() {
   const [jobs, setJobs] = useState<EstimateDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [activeDemoSite, setActiveDemoSite] = useState<DemoSite | null>(null);
+  const [activeTab, setActiveTab] = useState<'new' | 'scheduled' | 'completed'>('new');
   const [showFutureFeature, setShowFutureFeature] = useState(false);
+  const [showThirdPartyFeature, setShowThirdPartyFeature] = useState(false);
   const [showLogoutMenu, setShowLogoutMenu] = useState(false);
   const [userOrg, setUserOrg] = useState('');
   const [agentActive, setAgentActive] = useState(false);
@@ -86,9 +91,18 @@ export default function HomePage() {
     return () => { unsub?.(); };
   }, [user]);
 
-  // Build map pins from first 5 jobs that have coordinates
-  // Pins: 5 most recent successful jobs with coordinates (jobs already sorted desc by created_at)
   const pins = useMemo<SitePin[]>(() => {
+    if (activeTab === 'scheduled') {
+      return DEMO_SITES.filter(s => s.type === 'scheduled').map((s, i) => ({
+        lat: s.lat, lng: s.lng, label: String(i + 1), jobId: s.id, color: '#F59E0B',
+      }));
+    }
+    if (activeTab === 'completed') {
+      return DEMO_SITES.filter(s => s.type === 'completed').map((s, i) => ({
+        lat: s.lat, lng: s.lng, label: String(i + 1), jobId: s.id, color: '#10B981',
+      }));
+    }
+    // new tab: 5 most recent successful Firestore jobs with coordinates
     const result: SitePin[] = [];
     for (const job of jobs) {
       if (result.length >= 5) break;
@@ -97,11 +111,11 @@ export default function HomePage() {
       const lat = input.location?.startLat;
       const lng = input.location?.startLon;
       if (lat && lng) {
-        result.push({ lat, lng, label: String(result.length + 1), jobId: job.id });
+        result.push({ lat, lng, label: String(result.length + 1), jobId: job.id, color: '#FF6B00' });
       }
     }
     return result;
-  }, [jobs]);
+  }, [jobs, activeTab]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -151,9 +165,34 @@ export default function HomePage() {
         </div>
       </header>
 
+      {/* Tab pills */}
+      <div className="flex gap-2 px-4 py-2.5 border-b border-gray-100 bg-white">
+        {(['new', 'scheduled', 'completed'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              activeTab === tab
+                ? tab === 'new' ? 'bg-[hsl(25,100%,50%)] text-white'
+                  : tab === 'scheduled' ? 'bg-amber-500 text-white'
+                  : 'bg-emerald-500 text-white'
+                : 'bg-gray-100 text-gray-500'
+            }`}
+          >
+            {tab === 'new' ? 'New Sites' : tab === 'scheduled' ? 'Scheduled' : 'Completed'}
+          </button>
+        ))}
+      </div>
+
       {/* Site Map */}
       <div className="relative h-[40vh] w-full border-b border-gray-200">
-        <SiteMapView pins={pins} onPinClick={(jobId) => setActiveJobId(jobId)} />
+        <SiteMapView
+          pins={pins}
+          onPinClick={(jobId) => {
+            const demo = DEMO_SITES.find(s => s.id === jobId);
+            if (demo) { setActiveDemoSite(demo); } else { setActiveJobId(jobId); }
+          }}
+        />
         {/* Map overlay CTA */}
         <button
           onClick={() => { clearFormState(); router.push('/request/details'); }}
@@ -169,18 +208,64 @@ export default function HomePage() {
 
       {/* Site list */}
       <div className="px-4 pt-4 pb-2">
-        {/* Section label */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Recent Sites</span>
-          {jobs.length > 0 && (
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            {activeTab === 'new' ? 'New Sites' : activeTab === 'scheduled' ? 'Scheduled Sites' : 'Completed Sites'}
+          </span>
+          {activeTab === 'new' && jobs.length > 0 && (
             <span className="text-xs text-gray-400">{jobs.length} site{jobs.length !== 1 ? 's' : ''}</span>
           )}
         </div>
 
-        {/* Scrollable card */}
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          {/* Loading */}
-          {loading && (
+          {/* Demo: scheduled sites */}
+          {activeTab === 'scheduled' && (
+            <div className="divide-y divide-gray-100">
+              {DEMO_SITES.filter(s => s.type === 'scheduled').map((site) => (
+                <button
+                  key={site.id}
+                  onClick={() => setActiveDemoSite(site)}
+                  className="w-full text-left px-4 py-3.5 active:bg-gray-50 flex items-center gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-900 text-sm truncate">Job {site.jobName}</div>
+                    <div className="text-xs text-gray-500 truncate mt-0.5">{site.address}, {site.city}</div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-gray-400">{site.scheduledDate}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full border font-semibold px-2 py-0.5 text-xs bg-amber-50 text-amber-700 border-amber-200">Scheduled</span>
+                    <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Demo: completed sites */}
+          {activeTab === 'completed' && (
+            <div className="divide-y divide-gray-100">
+              {DEMO_SITES.filter(s => s.type === 'completed').map((site) => (
+                <button
+                  key={site.id}
+                  onClick={() => setActiveDemoSite(site)}
+                  className="w-full text-left px-4 py-3.5 active:bg-gray-50 flex items-center gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-900 text-sm truncate">Job {site.jobName}</div>
+                    <div className="text-xs text-gray-500 truncate mt-0.5">{site.address}, {site.city}</div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-gray-400">{site.completedDate}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full border font-semibold px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 border-emerald-200">Completed</span>
+                    <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* New sites: Firestore jobs */}
+          {activeTab === 'new' && loading && (
             <div className="divide-y divide-gray-100">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="px-4 py-3.5 flex items-center gap-3">
@@ -194,16 +279,14 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Empty state */}
-          {!loading && jobs.length === 0 && (
+          {activeTab === 'new' && !loading && jobs.length === 0 && (
             <div className="py-8 text-center px-4">
               <p className="text-gray-400 text-sm">No sites yet.</p>
               <p className="text-gray-400 text-xs mt-1">Tap <strong>+ New Site</strong> on the map to get started.</p>
             </div>
           )}
 
-          {/* Job rows — scrollable up to ~4 rows then scrolls */}
-          {!loading && jobs.length > 0 && (
+          {activeTab === 'new' && !loading && jobs.length > 0 && (
             <div className="divide-y divide-gray-100 max-h-[13.5rem] overflow-y-auto">
               {jobs.map((job) => {
                 const status = getJobStatus(job);
@@ -213,13 +296,11 @@ export default function HomePage() {
                 const rawDate = job.metadata?.created_at;
                 const createdAt = (() => {
                   if (!rawDate) return '';
-                  // Firestore Timestamp arrives as {seconds, nanoseconds}; strings/numbers work directly
                   const ms = typeof rawDate === 'object' && 'seconds' in rawDate
                     ? (rawDate as { seconds: number }).seconds * 1000
                     : Date.parse(rawDate as string);
                   return isNaN(ms) ? '' : new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 })();
-
                 return (
                   <button
                     key={job.id}
@@ -246,7 +327,7 @@ export default function HomePage() {
       </div>
 
       {/* Future Feature cards */}
-      <div className="px-4 pt-3 pb-24 grid grid-cols-2 gap-3">
+      <div className="px-4 pt-3 grid grid-cols-2 gap-3">
         <button
           onClick={() => setShowFutureFeature(true)}
           className="rounded-xl border-2 border-dashed border-gray-200 p-4 text-left active:bg-gray-50 flex flex-col gap-2"
@@ -262,7 +343,7 @@ export default function HomePage() {
         </button>
 
         <button
-          onClick={() => setShowFutureFeature(true)}
+          onClick={() => setShowThirdPartyFeature(true)}
           className="rounded-xl border-2 border-dashed border-gray-200 p-4 text-left active:bg-gray-50 flex flex-col gap-2"
         >
           <div className="flex items-center justify-between">
@@ -270,10 +351,17 @@ export default function HomePage() {
             <span className="text-[10px] font-semibold bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full">Soon</span>
           </div>
           <div>
-            <div className="font-semibold text-gray-400 text-sm leading-tight">Future Feature</div>
+            <div className="font-semibold text-gray-400 text-sm leading-tight">Future Feature — 3rd Party</div>
             <div className="text-xs text-gray-400 mt-0.5 leading-tight">Download from the AWP App Store</div>
           </div>
         </button>
+      </div>
+
+      {/* Keryk AI footer */}
+      <div className="flex items-center justify-center gap-1.5 py-4 pb-24">
+        <span className="text-[10px] text-gray-300">Powered by</span>
+        <Image src="/keryk-ai-logo.png" alt="Keryk AI" width={14} height={14} className="rounded-sm opacity-40" />
+        <span className="text-[10px] font-semibold text-gray-300">Keryk AI</span>
       </div>
 
       {/* Sheets */}
@@ -285,11 +373,25 @@ export default function HomePage() {
         />
       )}
 
+      {activeDemoSite && (
+        <DemoSiteSheet
+          site={activeDemoSite}
+          onClose={() => setActiveDemoSite(null)}
+        />
+      )}
+
       <ComingSoonSheet
         isOpen={showFutureFeature}
         onClose={() => setShowFutureFeature(false)}
         title="Coming Soon"
         message="AWP is building more tools on this platform. Upcoming features include AI field assistants, automated site risk analysis, schedule optimization, permit management, compliance documentation, and more."
+      />
+
+      <ComingSoonSheet
+        isOpen={showThirdPartyFeature}
+        onClose={() => setShowThirdPartyFeature(false)}
+        title="Coming Soon — 3rd Party"
+        message="AWP is partnering with leading field technology providers to bring third-party tools directly into this platform. Upcoming integrations include partner apps for inspection, permitting, crew management, and compliance — all accessible from the AWP App Store."
       />
 
       {/* Backdrop behind agent widget during active call */}
