@@ -1,6 +1,6 @@
 export type TimeOfDay = 'Day' | 'Night';
 export type ConstructionType = 'underground' | 'overhead' | 'other';
-export type WorkType = 'flagging' | 'lane-closure';
+export type WorkType = 'flagging' | 'lane-closure' | 'tcp-request';
 export type LaneSide = 'left' | 'right';
 
 export interface EstimatePayload {
