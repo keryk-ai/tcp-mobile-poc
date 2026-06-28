@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import StepNav from '@/components/StepNav';
 import ComingSoonSheet from '@/components/ComingSoonSheet';
-import { getFormState, setFormState } from '@/lib/formState';
+import { getFormState, setFormState, clearFormState } from '@/lib/formState';
 import type { WorkType, LaneSide } from '@/types/estimate';
 
 const DIRECTIONS = ['Northbound', 'Southbound', 'Eastbound', 'Westbound', 'Northeastbound', 'Southeastbound', 'Southwestbound', 'Northwestbound'];
@@ -15,6 +15,7 @@ export default function WorkTypePage() {
   const [selectedLane, setSelectedLane] = useState<LaneSide | null>(null);
   const [direction, setDirection] = useState('');
   const [showShoulderSheet, setShowShoulderSheet] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const state = getFormState();
@@ -24,13 +25,21 @@ export default function WorkTypePage() {
   }, []);
 
   const isValid =
-    workType === 'flagging'
-      ? !!direction
-      : workType === 'lane-closure'
-      ? !!selectedLane && !!direction
-      : false;
+    workType === 'flagging' ? !!direction
+    : workType === 'lane-closure' ? !!selectedLane && !!direction
+    : workType === 'tcp-request' ? true
+    : false;
 
   const handleNext = () => {
+    if (workType === 'tcp-request') {
+      setSending(true);
+      setFormState({ workType, selectedLane: null, direction: '' });
+      setTimeout(() => {
+        clearFormState();
+        router.push('/home');
+      }, 2200);
+      return;
+    }
     setFormState({ workType, selectedLane, direction });
     router.push('/request/review');
   };
@@ -49,13 +58,12 @@ export default function WorkTypePage() {
             workType === 'flagging' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
           }`}
         >
-          <span className="text-2xl">🚩</span>
-          <div>
+          <div className="flex-1">
             <div className="font-semibold text-gray-900">Flagging</div>
             <div className="text-xs text-gray-500 mt-0.5">TA-10 — single flagger operation</div>
           </div>
           {workType === 'flagging' && (
-            <div className="ml-auto w-5 h-5 rounded-full bg-[hsl(25,100%,50%)] flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full bg-[hsl(25,100%,50%)] flex items-center justify-center shrink-0">
               <div className="w-2 h-2 rounded-full bg-white" />
             </div>
           )}
@@ -68,13 +76,30 @@ export default function WorkTypePage() {
             workType === 'lane-closure' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
           }`}
         >
-          <span className="text-2xl">🚧</span>
-          <div>
+          <div className="flex-1">
             <div className="font-semibold text-gray-900">Lane Closure</div>
             <div className="text-xs text-gray-500 mt-0.5">TA-30/30R/33 — relay resolves from road geometry</div>
           </div>
           {workType === 'lane-closure' && (
-            <div className="ml-auto w-5 h-5 rounded-full bg-[hsl(25,100%,50%)] flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full bg-[hsl(25,100%,50%)] flex items-center justify-center shrink-0">
+              <div className="w-2 h-2 rounded-full bg-white" />
+            </div>
+          )}
+        </button>
+
+        {/* Complex Job: Request a TCP */}
+        <button
+          onClick={() => { setWorkType('tcp-request'); setSelectedLane(null); }}
+          className={`w-full p-4 rounded-xl border-2 text-left flex items-center gap-3 transition-colors ${
+            workType === 'tcp-request' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
+          }`}
+        >
+          <div className="flex-1">
+            <div className="font-semibold text-gray-900">Complex Job — Request a TCP</div>
+            <div className="text-xs text-gray-500 mt-0.5">Multi-lane, intersection, or non-standard work — an AWP engineer will design your plan</div>
+          </div>
+          {workType === 'tcp-request' && (
+            <div className="w-5 h-5 rounded-full bg-[hsl(25,100%,50%)] flex items-center justify-center shrink-0">
               <div className="w-2 h-2 rounded-full bg-white" />
             </div>
           )}
@@ -85,7 +110,6 @@ export default function WorkTypePage() {
           onClick={() => setShowShoulderSheet(true)}
           className="w-full p-4 rounded-xl border-2 border-gray-200 text-left flex items-center gap-3 opacity-60"
         >
-          <span className="text-2xl">🛞</span>
           <div className="flex-1">
             <div className="font-semibold text-gray-700">Shoulder Closure</div>
           </div>
@@ -107,15 +131,15 @@ export default function WorkTypePage() {
                       : 'bg-white text-gray-700 border-gray-300'
                   }`}
                 >
-                  {lane === 'left' ? '← Left' : 'Right →'}
+                  {lane === 'left' ? 'Left Lane' : 'Right Lane'}
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Direction */}
-        {workType && (
+        {/* Direction (Flagging and Lane Closure only) */}
+        {(workType === 'flagging' || workType === 'lane-closure') && (
           <div className="pt-2">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Direction of travel</label>
             <select
@@ -131,6 +155,13 @@ export default function WorkTypePage() {
             {direction && (
               <p className="text-xs text-gray-400 mt-1 ml-1">Pre-filled from your pin placement</p>
             )}
+          </div>
+        )}
+
+        {/* TCP request info */}
+        {workType === 'tcp-request' && (
+          <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-800">
+            An AWP traffic engineer will review your site details and deliver a compliant, field-ready TCP within 72 hours. Tap <strong>Next</strong> to submit your request.
           </div>
         )}
       </div>
@@ -152,6 +183,17 @@ export default function WorkTypePage() {
           Not sure? Ask the AWP AI Expert
         </button>
       </div>
+
+      {/* TCP request sending overlay */}
+      {sending && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm gap-5">
+          <div className="w-12 h-12 rounded-full border-4 border-[hsl(25,100%,50%)] border-t-transparent animate-spin" />
+          <div className="text-center">
+            <div className="font-bold text-gray-900 text-lg">Sending TCP Request</div>
+            <div className="text-sm text-gray-500 mt-1">Your request is being sent to an AWP engineer…</div>
+          </div>
+        </div>
+      )}
 
       <ComingSoonSheet
         isOpen={showShoulderSheet}
