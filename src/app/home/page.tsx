@@ -108,10 +108,9 @@ export default function HomePage() {
         lat: s.lat, lng: s.lng, label: String(i + 1), jobId: s.id, color: '#10B981',
       }));
     }
-    // new tab: 5 most recent successful Firestore jobs with coordinates
+    // new tab: all successful Firestore jobs with coordinates
     const result: SitePin[] = [];
     for (const job of jobs) {
-      if (result.length >= 5) break;
       if (getJobStatus(job) !== 'success') continue;
       const input = parseJobInput(job);
       const lat = input.location?.startLat;
