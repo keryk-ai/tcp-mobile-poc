@@ -1,3 +1,32 @@
+export interface WeatherForecast {
+  condition: string;
+  icon: string;
+  tempHigh: number;
+  tempLow: number;
+  precipitation: string;
+  wind: string;
+  advisory?: string;
+}
+
+export interface NearbyWork {
+  company: string;
+  description: string;
+  distance: string;
+  date: string;
+}
+
+export interface SiteRestriction {
+  source: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+}
+
+export interface SiteContext {
+  weather: WeatherForecast;
+  nearbyWork: NearbyWork[];
+  restrictions: SiteRestriction[];
+}
+
 export interface DemoLineItem {
   description: string;
   price: number;
@@ -33,6 +62,7 @@ export interface DemoSite {
   total: number;
   notes: string;
   planDescription: string;
+  context?: SiteContext;
 }
 
 const AWP_LINE_ITEMS: DemoLineItem[] = [
@@ -76,6 +106,48 @@ export const DEMO_SITES: DemoSite[] = [
     total: 3267.00,
     notes: 'The * indicates taxable items.',
     planDescription: 'TA-10 traffic control plan with flaggers.',
+    context: {
+      weather: {
+        condition: 'Partly Cloudy',
+        icon: '⛅',
+        tempHigh: 87,
+        tempLow: 68,
+        precipitation: '20% chance of afternoon thunderstorms after 2 PM',
+        wind: '7 mph SW',
+        advisory: 'Afternoon storm risk — consider early start to complete before 1 PM',
+      },
+      nearbyWork: [
+        {
+          company: 'Rowan County Public Works',
+          description: 'Resurfacing Hwy 150 — single lane alternating traffic control',
+          distance: '0.8 mi',
+          date: 'July 14–18, 2026',
+        },
+        {
+          company: 'Piedmont Natural Gas',
+          description: 'Gas main replacement — full closure of Depot St at Old Salisbury Rd intersection',
+          distance: '0.2 mi',
+          date: 'July 15, 2026',
+        },
+      ],
+      restrictions: [
+        {
+          source: 'Town of Linwood Ordinance 12-04',
+          description: 'No lane closures on Old Salisbury Rd Mon–Fri 7:00–9:00 AM and 4:00–6:00 PM',
+          impact: 'high',
+        },
+        {
+          source: 'Rowan County Permit Office',
+          description: 'Work zone permit required for any closure exceeding 30 min on state-maintained roads. 48-hour advance notice required.',
+          impact: 'medium',
+        },
+        {
+          source: 'Duke Energy Coordination',
+          description: 'Notify Duke Energy operations center at least 2 hours before work start. Contact: 1-800-452-2777',
+          impact: 'low',
+        },
+      ],
+    },
   },
   {
     id: 'demo-completed-001',

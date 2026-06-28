@@ -77,15 +77,84 @@ export default function DemoSiteSheet({ site, onClose }: DemoSiteSheetProps) {
           {isCompleted ? (
             <AWPDocumentView site={site} mode="invoice" />
           ) : (
-            /* Scheduled: show the estimate placeholder image */
-            <div className="mx-4 mt-2 mb-4 rounded-xl overflow-hidden border border-gray-200">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/awp-estimate-placeholder.png"
-                alt="AWP Estimate"
-                className="w-full h-auto"
-              />
-            </div>
+            <>
+              {/* Site context cards */}
+              {site.context && (
+                <div className="px-4 mt-2 space-y-2">
+                  {/* Weather */}
+                  <div className="rounded-xl border border-gray-200 bg-white p-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Weather Forecast</span>
+                      <span className="text-xs text-gray-400">· {site.scheduledDate}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{site.context.weather.icon}</span>
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900 text-sm">{site.context.weather.condition}</div>
+                        <div className="text-xs text-gray-500">High {site.context.weather.tempHigh}° · Low {site.context.weather.tempLow}° · Wind {site.context.weather.wind}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{site.context.weather.precipitation}</div>
+                      </div>
+                    </div>
+                    {site.context.weather.advisory && (
+                      <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-100 text-xs text-amber-800 font-medium">
+                        ⚠ {site.context.weather.advisory}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Nearby work */}
+                  <div className="rounded-xl border border-gray-200 bg-white p-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Nearby Work Activity</span>
+                    </div>
+                    <div className="space-y-2">
+                      {site.context.nearbyWork.map((w, i) => (
+                        <div key={i} className="flex gap-2">
+                          <span className="text-base mt-0.5">🚧</span>
+                          <div>
+                            <div className="text-xs font-semibold text-gray-800">{w.company} <span className="font-normal text-gray-400">· {w.distance}</span></div>
+                            <div className="text-xs text-gray-600">{w.description}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{w.date}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Restrictions */}
+                  <div className="rounded-xl border border-gray-200 bg-white p-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Site Restrictions & Requirements</span>
+                    </div>
+                    <div className="space-y-2">
+                      {site.context.restrictions.map((r, i) => (
+                        <div key={i} className={`p-2 rounded-lg border text-xs ${
+                          r.impact === 'high' ? 'bg-red-50 border-red-100 text-red-800' :
+                          r.impact === 'medium' ? 'bg-amber-50 border-amber-100 text-amber-800' :
+                          'bg-gray-50 border-gray-100 text-gray-700'
+                        }`}>
+                          <div className="font-semibold mb-0.5">{r.source}</div>
+                          <div>{r.description}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Estimate placeholder */}
+              <div className="mx-4 mt-3 mb-4 rounded-xl overflow-hidden border border-gray-200">
+                <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Estimate · {site.documentId}</span>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/awp-estimate-placeholder.png"
+                  alt="AWP Estimate"
+                  className="w-full h-auto"
+                />
+              </div>
+            </>
           )}
         </div>
       </div>
