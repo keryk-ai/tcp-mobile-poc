@@ -1,8 +1,8 @@
 # TCP Mobile App — POC Specification
 
-**Version:** 1.3  
-**Date:** 2026-06-26  
-**Status:** Ready for development  
+**Version:** 2.0  
+**Date:** 2026-06-29  
+**Status:** POC delivered — see Section 15 for current state vs. original spec  
 **Owners:** Morgan Stern (product), Wade (pipeline/relay), TBD (mobile dev)
 
 **Related documents:**
@@ -17,10 +17,15 @@
 
 This spec defines the customer-facing mobile app that lets AWP's enterprise customers (Lumos, Verizon, Duke, etc.) request traffic control plan estimates from their phone and view results asynchronously.
 
-The app has three primary features:
-1. **Request an Estimate** — submit a work zone location and type; receive a rendered plan image + bill of materials
-2. **Inbox** — view and download completed estimates
-3. **Ask AWP Traffic Safety AI** — voice conversation with an ElevenLabs agent for traffic control guidance
+The delivered POC includes:
+1. **Request an Estimate** — 4-step flow (details, map pins, work type, review); submits to relay, navigates to inbox on success
+2. **Complex Job — Request a TCP** — bypasses AI estimate, routes directly to AWP engineer; TCP delivered within 72 hours
+3. **Home Map View** — three-tab interface (New/Scheduled/Completed) with Leaflet map, colored pins, and a site list
+4. **Inbox** — real-time org-scoped Firestore feed with job detail bottom sheet
+5. **Schedule a Crew** — two-week calendar with weather, crew availability, and Friday discount
+6. **Notifications** — bell icon with five notification types including behavioral prediction alerts and partner offers
+7. **Demo Content** — hardcoded scheduled and completed sites with contextual data (weather, nearby work, restrictions, invoice)
+8. **Ask AWP Traffic Safety AI** — ElevenLabs `elevenlabs-convai` web component embedded in the request flow
 
 ### Platform Vision
 
@@ -66,7 +71,7 @@ New standalone repo: **`tcp-mobile-poc`**. Not bolted onto `svc-frontend`. Mobil
 | Auth | Firebase JS SDK — same project as production |
 | Maps | Leaflet 1.9 + Mapbox Satellite Streets (satellite view) + OpenStreetMap (street view) |
 | Realtime data | Firebase Firestore `onSnapshot()` |
-| Voice AI | `@11labs/react` — `useConversation()` hook |
+| Voice AI | ElevenLabs `elevenlabs-convai` web component (replaces `@11labs/react` hook) |
 | HTTP | `fetch` with typed wrappers |
 | Deploy | Docker + Coolify (same pipeline as other services) |
 | PWA | `next-pwa` — manifest + service worker for home screen install |
@@ -91,47 +96,52 @@ src/
 │   ├── login/
 │   │   └── page.tsx                # Firebase email/password login
 │   ├── home/
-│   │   └── page.tsx                # Dashboard — 3 feature cards
+│   │   └── page.tsx                # Map view — New/Scheduled/Completed tabs, notification bell
 │   ├── request/
-│   │   ├── layout.tsx              # Step flow wrapper + progress bar
-│   │   ├── details/page.tsx        # Step 1: WO#, address, time, construction type
+│   │   ├── layout.tsx              # Step flow wrapper + ElevenLabsWidget
+│   │   ├── details/page.tsx        # Step 1: WO#, address (GPS), time, construction type
 │   │   ├── map/page.tsx            # Step 2: Leaflet 2-pin picker
-│   │   ├── work-type/page.tsx      # Step 3: Flagging / Lane Closure / Shoulder Closure + direction
-│   │   └── review/page.tsx         # Step 4: Confirm + submit (with budgetary disclaimer)
+│   │   ├── work-type/page.tsx      # Step 3: Flagging / Lane Closure / Complex Job / Shoulder Closure
+│   │   └── review/page.tsx         # Step 4: Confirm + submit (skipped for Complex Job)
 │   ├── inbox/
-│   │   ├── page.tsx                # Job list — Firestore subscription by org
-│   │   └── [jobId]/
-│   │       └── page.tsx            # Job detail — image, BOM, download, AI entry point
+│   │   └── page.tsx                # Firestore org-scoped job list + JobDetailSheet
 │   ├── ai/
-│   │   └── page.tsx                # Voice agent screen
+│   │   └── page.tsx                # Standalone AI page (secondary entry point)
 │   └── api/
 │       ├── estimate-proxy/
 │       │   └── route.ts            # POST /estimate proxy (injects auth header)
-│       ├── geocode/
-│       │   └── route.ts            # Address search (copy from svc-frontend)
-│       └── elevenlabs/
-│           └── signed-url/
-│               └── route.ts        # Returns signed URL for ElevenLabs agent session
+│       └── geocode/
+│           ├── route.ts            # Address search
+│           └── reverse/
+│               └── route.ts        # Reverse geocode (lat/lng → street address)
 ├── components/
-│   ├── AuthContext.tsx              # (copied from svc-frontend)
-│   ├── PinMap.tsx                  # Leaflet map — A/B pin placement only
-│   ├── JobCard.tsx                 # Inbox list item with status badge
-│   ├── BOMDisplay.tsx              # Structured BOM — signs, devices, cones, stands, sandbags
-│   ├── JobDetailSheet.tsx          # Full-screen bottom sheet — image, BOM, action buttons
-│   ├── VoiceAgent.tsx              # ElevenLabs conversation UI — orb + transcript
+│   ├── AuthContext.tsx              # useAuth() hook — Firebase auth state
+│   ├── PinMap.tsx                  # Leaflet map — A/B pin placement
+│   ├── SiteMapView.tsx             # Home map — colored site pins, tab-aware filtering
+│   ├── JobDetailSheet.tsx          # Bottom sheet — plan image, BOM, action buttons
+│   ├── DemoSiteSheet.tsx           # Bottom sheet — scheduled/completed demo site detail
+│   ├── AWPDocumentView.tsx         # Styled AWP estimate/invoice renderer (mode: estimate|invoice)
+│   ├── ScheduleCalendarSheet.tsx   # 2-week crew booking calendar with weather + Friday discount
+│   ├── NotificationSheet.tsx       # Bell notification panel — 5 types, read/unread state
+│   ├── ElevenLabsWidget.tsx        # elevenlabs-convai web component wrapper with dynamic vars
 │   ├── StepNav.tsx                 # Progress bar + back/next buttons
 │   ├── StatusBadge.tsx             # Processing / Ready / Failed badge
-│   └── ComingSoonSheet.tsx         # Reusable bottom sheet for Coming Soon taps (Quote, TCP, Schedule, Future Feature)
+│   └── ComingSoonSheet.tsx         # Reusable bottom sheet for Coming Soon features
 ├── lib/
-│   ├── firebase.ts                 # (copied from svc-frontend)
-│   ├── auth.ts                     # (copied from svc-frontend)
+│   ├── firebase.ts                 # Firebase init
+│   ├── auth.ts                     # signIn, signOut
 │   ├── api.ts                      # buildEstimatePayload() + postEstimate()
-│   ├── jobs.ts                     # subscribeToEstimates(), subscribeToEstimate(id)
-│   └── taLogic.ts                  # deriveTA() — road type + lane → TA code
+│   ├── mapUtils.ts                 # Haversine distance, bearing, cardinal direction
+│   ├── formState.ts                # sessionStorage form state (get/set/clear)
+│   ├── taLogic.ts                  # buildEstimateWork() — work type → relay payload
+│   ├── demoData.ts                 # DEMO_SITES — hardcoded scheduled/completed sites
+│   └── notifications.ts            # MOCK_NOTIFICATIONS — 5 types, TYPE_CONFIG
 ├── types/
-│   └── estimate.ts                 # EstimatePayload, EstimateDoc, BOMResult types
+│   └── estimate.ts                 # EstimatePayload, EstimateDoc, BOMResult, FormState, WorkType
 └── public/
     ├── manifest.json               # PWA manifest
+    ├── keryk-ai-logo.png           # Keryk AI footer logo
+    ├── awp-estimate-placeholder.png # Placeholder estimate image for scheduled demo site
     └── icons/                      # 192×192, 512×512 app icons
 ```
 
@@ -363,6 +373,7 @@ The user selects a work type and, for lane closures, which lane is being closed.
 |---|---|---|---|
 | Flagging | `"ta-10"` | Client (deterministic) | Always TA-10 |
 | Lane Closure | `null` | Relay (OSM geometry + `selected_lane`) | Relay resolves TA-30, TA-30R, or TA-33 |
+| Complex Job — Request a TCP | — | Not submitted to relay | Bypasses estimate; sends site to AWP engineer; overlay shown then navigate to home |
 | Shoulder Closure | — | Not supported in v1 | Card opens ComingSoonSheet |
 
 **Relay TA resolution for lane closure (from `relay.py: derive_ta_code()`):**
@@ -375,7 +386,7 @@ The relay reads road type from OSM via the geocoder at the pin coordinates. The 
 ### `taLogic.ts`
 
 ```typescript
-type WorkType = 'flagging' | 'lane-closure';
+type WorkType = 'flagging' | 'lane-closure' | 'tcp-request';
 type LaneSide = 'left' | 'right';
 
 export function buildEstimateWork(
@@ -400,6 +411,7 @@ export function buildEstimateWork(
     isRoadCrossing:  false,
     dynamicFields:   { direction, selected_lane: selectedLane },
   };
+  // Note: 'tcp-request' never calls buildEstimateWork — it bypasses the relay entirely.
 }
 ```
 
@@ -411,15 +423,13 @@ export function buildEstimateWork(
 
 ```
 /login              → Login
-/home               → Dashboard (3 cards)
+/home               → Map view — New/Scheduled/Completed tabs
 /request/details    → Step 1: Job details
 /request/map        → Step 2: Pin placement
-/request/work-type  → Step 3: Work type + TA derivation
-/request/review     → Step 4: Confirm + submit
-/inbox              → Estimate list
-/inbox/[jobId]      → Estimate detail
-/ai                 → Voice agent
-/ai?jobId=[jobId]   → Voice agent with job context pre-loaded
+/request/work-type  → Step 3: Work type (Flagging / Lane Closure / Complex Job / Shoulder Closure)
+/request/review     → Step 4: Confirm + submit (skipped for Complex Job — goes home after overlay)
+/inbox              → Estimate list (Firestore onSnapshot, org-scoped)
+/ai                 → Standalone AI page (secondary entry point)
 ```
 
 Step flow uses URL-based navigation with shared state in `sessionStorage` (form data persists across steps, cleared on submit or abandon).
@@ -1109,29 +1119,31 @@ NEXT_PUBLIC_AWP_AGENT_ID=agent_8301kw2ea0h1ex0af3yjjee8kwef  # AWP Traffic Safet
 
 ## 12. Build Plan
 
-### Week 1 — Core submission loop
+### ✅ Delivered — Core submission loop (Week 1)
 
-| Day | Deliverable |
+| Feature | Status |
 |---|---|
-| 1 | Repo setup: Next.js 15, Tailwind, Firebase config, PWA manifest, mobile viewport, login screen, auth guard |
-| 2 | Home dashboard (4 cards: 3 live + Future Feature teaser), step flow shell (`/request/layout.tsx`), `StepNav` progress bar component, `sessionStorage` form state, shared `ComingSoonSheet` bottom sheet component |
-| 3 | Step 1 (details form) + Step 3 (work type — Flagging / Lane Closure / Shoulder Closure, direction selector, budgetary disclaimer info block) |
-| 4 | Step 2 (Leaflet pin map — `PinMap.tsx`, 2-pin placement, auto-center on Step 1 address, distance/direction auto-calc) |
-| 5 | Step 4 (review screen + budgetary disclaimer banner) + `POST /api/estimate-proxy` route + submission loading state + confirmation navigation |
+| Repo setup: Next.js 15, Tailwind, Firebase, PWA manifest, auth guard | ✅ Done |
+| Step flow shell, `StepNav`, `sessionStorage` form state, `ComingSoonSheet` | ✅ Done |
+| Step 1 (details, GPS), Step 3 (work type), Step 4 (review + submit) | ✅ Done |
+| Step 2 (Leaflet pin map, distance/direction auto-calc) | ✅ Done |
+| `POST /api/estimate-proxy` route, loading state, navigation | ✅ Done |
 
-### Week 2 — Inbox, job detail, AI
+### ✅ Delivered — Inbox, job detail, AI (Week 2)
 
-| Day | Deliverable |
+| Feature | Status |
 |---|---|
-| 6 | `jobs.ts` Firestore subscriptions, Inbox list (`onSnapshot` org query), `JobCard`, `StatusBadge` |
-| 7 | `JobDetailSheet.tsx` — full-screen bottom sheet with drag handle; plan image (pinch-zoom, download icon), `BOMDisplay`, Ask AI link, Quote/TCP/Schedule action buttons (all open `ComingSoonSheet` with button-specific copy) |
-| 8 | `/api/elevenlabs/signed-url` route, `VoiceAgent.tsx` component, AI screen (`/ai`) |
-| 9 | AI context from Job Detail (`/ai?jobId=...`), dynamic variables injection, orb animation |
-| 10 | End-to-end smoke test on demo device, mobile CSS polish, error states (failed estimate, network error, expired session) |
-
-### Parallel dependency (Wade)
-
-Week 1 can be built and tested entirely against mock data. Before Day 6, agree on a Firestore doc in `tcp_estimates_V1` with real data (one success, one failure) so inbox and job detail can be built against the actual schema.
+| Inbox — Firestore `onSnapshot`, `StatusBadge` | ✅ Done |
+| `JobDetailSheet` — plan image, BOM, Analyze/Quote/TCP/Schedule buttons | ✅ Done |
+| ElevenLabs `elevenlabs-convai` widget embedded in request layout | ✅ Done (replaced `VoiceAgent.tsx` + signed-url route) |
+| Demo data — scheduled/completed sites, `DemoSiteSheet`, `AWPDocumentView` | ✅ Done |
+| `ScheduleCalendarSheet` — 2-week calendar, weather, Friday discount | ✅ Done |
+| `NotificationSheet` — bell icon, 5 notification types, unread state | ✅ Done |
+| Home map view — `SiteMapView`, tab pills (New/Scheduled/Completed) | ✅ Done |
+| Complex Job — Request a TCP (bypass review, overlay, navigate home) | ✅ Done |
+| Reverse geocode API (`/api/geocode/reverse`) | ✅ Done |
+| Firebase custom claims provisioning for demo accounts | ✅ Done |
+| Coolify deployment at `awp.dev.keryk.ai` | ✅ Done |
 
 ---
 
@@ -1157,17 +1169,66 @@ Per Wade's spec and product decisions:
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | ~~Create AWP Traffic Safety AI agent in ElevenLabs~~ | ✅ Done | `agent_id: agent_8301kw2ea0h1ex0af3yjjee8kwef` → `NEXT_PUBLIC_AWP_AGENT_ID` |
-| 2 | Confirm Firebase custom claims provisioning flow for `customer_org` | Morgan → Wade | Blocking Firestore security rules |
-| 3 | Confirm per-org scoping (`customer_org` field) | Morgan → Wade | Blocking Firestore security rules |
-| 4 | ~~TA-30/30R/33 auto-detection by pipeline from OSM road geometry~~ | ✅ Confirmed | Relay `derive_ta_code()` uses OSM road type + `selected_lane` from payload. App must send `selected_lane: "left"\|"right"` for lane closures. |
-| 5 | Seed one success + one failure doc in `tcp_estimates_V1` for dev testing | Wade | Needed before Day 6 |
-| 6 | ~~AWP branding assets — logo, primary color, icon files~~ | ✅ Done | Copied from svc-frontend: logos, Unitext font, #FF6B00 primary, #0A1525 dark bg |
-| 7 | Firebase project config values for mobile app env | Morgan | Needed before Day 1. Map tokens (Mapbox, Google) already in Infisical (TCP project). |
-| 8 | Shoulder closure TA — no TA code exists yet | Wade | Deferred: Shoulder Closure card shows "Coming Soon" in v1; full support post-POC |
-| 9 | "Order a TCP" backend — relay endpoint or new service, Firestore schema for TCP orders, 72-hour SLA fulfillment flow | Wade / Morgan | Post-POC — button shows "Coming Soon" in demo |
-| 10 | Future Feature card — define the next AWP product/feature to build on this platform | Morgan / AWP | Post-POC — static teaser card in demo |
+| 1 | ~~Create AWP Traffic Safety AI agent in ElevenLabs~~ | ✅ Done | `agent_id: agent_8301kw2ea0h1ex0af3yjjee8kwef` → `NEXT_PUBLIC_AWP_AGENT_ID`. System prompt v1.7. |
+| 2 | ~~Firebase custom claims provisioning flow for `customer_org`~~ | ✅ Done | Script at `scratchpad/set-claims.mjs`. Demo accounts: john.candelaria@awpsafety.com, josh.shipman@awpsafety.com — both `org: 'verizon'`. |
+| 3 | ~~Confirm per-org scoping (`customer_org` field)~~ | ✅ Done | Firestore security rules in place. Inbox query scoped to `metadata.customer_org`. |
+| 4 | ~~TA-30/30R/33 auto-detection by pipeline from OSM road geometry~~ | ✅ Confirmed | Relay `derive_ta_code()` uses OSM road type + `selected_lane` from payload. |
+| 5 | ~~Seed test docs in `tcp_estimates_V1`~~ | ✅ Done | Real estimates available. Demo sites use hardcoded `DEMO_SITES` array. |
+| 6 | ~~AWP branding assets — logo, primary color, icon files~~ | ✅ Done | Logos, Unitext font, #FF6B00 primary, #0A1525 dark bg. |
+| 7 | ~~Firebase project config values for mobile app env~~ | ✅ Done | Configured in Coolify. `awp.dev.keryk.ai` added to Firebase authorized domains and Google API key referrer restrictions. |
+| 8 | Shoulder closure TA — no TA code exists yet | Wade | Deferred: Shoulder Closure card shows "Coming Soon"; full support post-POC |
+| 9 | "Request a TCP" backend — full fulfillment flow, Firestore schema for TCP orders | Wade / Morgan | Complex Job path currently simulated (overlay + navigate home). Full backend post-POC. |
+| 10 | Future Feature cards — define next AWP products to build on this platform | Morgan / AWP | Two teaser cards on home screen (AI field assistants, third-party integrations). Details TBD. |
+| 11 | Agent prompt — update ElevenLabs agent with v1.7 system prompt | Morgan | Pending — paste `awp-traffic-safety-ai-system-prompt.md` into ElevenLabs dashboard |
+| 12 | PWA testing — install and test on iOS Safari and Android Chrome | Morgan | Pending |
 
 ---
 
-*Spec produced from codebase analysis of `svc-frontend`, `svc-4-map`, `relay`, `tcp-portal`, and `runtime-shell`, integrated with Wade's contract doc `2026-06-26-mobile-estimate-integration.md`.*
+## 15. Current State vs. Original Spec
+
+This section documents where the delivered POC diverges from the original v1.3 spec.
+
+### Changed from spec
+
+| Area | Spec (v1.3) | Delivered (v2.0) |
+|---|---|---|
+| Home screen | 4-card dashboard (Request, Inbox, AI, Future Feature) | Map view with New/Scheduled/Completed tab pills, notification bell, Keryk AI footer |
+| Work types | Flagging, Lane Closure, Shoulder Closure (Coming Soon) | Added: Complex Job — Request a TCP (bypasses estimate, overlay, navigates home) |
+| Work type screen | Emoji icons on each option (🚩🚧🛞) | Emojis removed; text-only options |
+| TCP/Schedule buttons | Both "Coming Soon" in Job Detail | Request a TCP: live. Schedule a Crew: live (opens `ScheduleCalendarSheet`). |
+| Download plan image | Download button overlaid on plan image | Removed from `JobDetailSheet` |
+| ElevenLabs integration | `@11labs/react` `useConversation()` hook, `VoiceAgent.tsx`, `/api/elevenlabs/signed-url` | `elevenlabs-convai` web component; dynamic vars as JSON attribute; embedded in request layout |
+| AI entry point | `/ai` page navigated from Job Detail `?jobId=` | Widget embedded in request flow; activated from "Ask AWP AI Expert" on work-type step |
+| Signed URL route | `/api/elevenlabs/signed-url` server route | Not built; ElevenLabs widget connects directly (no server-side signed URL in POC) |
+| Inbox route | `/inbox/[jobId]` dynamic route for deep-link | Removed; `JobDetailSheet` opened as a sheet from `/inbox` page |
+
+### Added beyond spec
+
+| Addition | Description |
+|---|---|
+| `DemoSiteSheet` | Bottom sheet for scheduled/completed demo sites; shows weather, nearby work, restrictions, estimate placeholder, or invoice |
+| `AWPDocumentView` | Styled AWP estimate/invoice renderer; used for completed demo site and print-ready download |
+| `ScheduleCalendarSheet` | 2-week booking calendar with weather forecast, crew availability, Friday 5% discount |
+| `NotificationSheet` | Bell icon panel with 5 notification types: job_complete, tcp_ready, incentive, algo_insight, partner_offer |
+| `SiteMapView` | Home screen map component with tab-aware colored site pins |
+| `demoData.ts` | Two hardcoded demo sites (Duke Energy scheduled, Verizon completed) with full line items and context |
+| `notifications.ts` | Mock notifications including behavioral prediction (algo_insight) and partner offer types |
+| Reverse geocode API | `/api/geocode/reverse` — GPS lat/lng → street address for Step 1 GPS button |
+| Agent system prompt | v1.7 at `awp-traffic-safety-ai-system-prompt.md`; covers app navigation, work type guidance, demo features |
+| Agent eval suite | 33 tests (23 P0) at `elevenlabs-agent-evals.md` |
+| Firebase domain fixes | `awp.dev.keryk.ai` added to Firebase authorized domains and Google API key HTTP referrer restrictions |
+| Custom claims provisioning | Script and process for setting `org` claim on Firebase users |
+
+### Still coming soon (post-POC)
+
+- Shoulder Closure work type (no relay TA code yet)
+- Request a TCP backend (fulfillment API, Firestore schema, 72-hour SLA tracking)
+- Request a Quote (formal quoting flow)
+- Analyze Site Risks (AI-powered risk scoring)
+- Push notifications (planned for React Native phase)
+- Production React Native migration
+
+---
+
+*Spec v2.0 — updated 2026-06-29 to reflect delivered POC state*  
+*Originally produced from codebase analysis of `svc-frontend`, `svc-4-map`, `relay`, and `tcp-portal`, integrated with Wade's contract doc `2026-06-26-mobile-estimate-integration.md`.*
