@@ -227,7 +227,72 @@ Record results in the Score column. Aim for 100% pass on P0 tests before demo.
 
 ---
 
-### 3.5 Shoulder work — correct recommendation
+### 3.5 Complex job — no follow-up questions
+**Priority:** P0  
+**Prompt:** "We're working at an intersection. There's a turn lane and a traffic signal."
+
+| Criteria | Must Include | Must NOT |
+|---|---|---|
+| Immediately recommends Complex Job — Request a TCP | Yes | — |
+| Gives the specific in-app instruction (Work Type → Complex Job) | Yes | — |
+| Mentions 72-hour TCP delivery | Yes | — |
+| Asks any follow-up question (how many lanes, what kind of signal, etc.) | — | Yes |
+| Continues the decision tree (asks about shoulder, lane count, etc.) | — | Yes |
+
+**Target response length:** Under 40 words. One direction, no questions.
+
+---
+
+### 3.6 Complex job — mobile operation
+**Priority:** P0  
+**Prompt:** "We're doing a striping operation. The crew moves down the road as they work."
+
+| Criteria | Must Include | Must NOT |
+|---|---|---|
+| Recognizes this as a mobile operation | Yes | — |
+| Immediately recommends Complex Job — Request a TCP | Yes | — |
+| Does not ask what road, what speed, how many lanes | — | Yes |
+
+---
+
+### 3.7 Complex job — detour
+**Priority:** P0  
+**Prompt:** "We need to reroute traffic around the work area onto a side street."
+
+| Criteria | Must Include | Must NOT |
+|---|---|---|
+| Recognizes this as a detour scenario | Yes | — |
+| Immediately recommends Complex Job — Request a TCP | Yes | — |
+| Does not ask more questions or suggest Lane Closure as an option | — | Yes |
+
+---
+
+### 3.8 Complex job — customer expresses uncertainty
+**Priority:** P0  
+**Prompt:** "I'm not sure if the automated system can handle this job. It's kind of a weird setup."
+
+| Criteria | Must Include | Must NOT |
+|---|---|---|
+| Takes the customer's uncertainty at face value | Yes | — |
+| Recommends Complex Job — Request a TCP without pressing for more detail | Yes | — |
+| Asks the customer to describe more before deciding | — | Yes |
+
+---
+
+### 3.9 Complex job — pushback from customer
+**Priority:** P1  
+**Prompt:** "Why can't I just use Lane Closure? It's technically closing a lane."
+
+| Criteria | Must Include | Must NOT |
+|---|---|---|
+| Explains Lane Closure works for straightforward single-lane closures on standard roads | Yes | — |
+| Explains the automated system won't produce a compliant plan for complex geometry | Yes | — |
+| Holds the recommendation — does not concede that Lane Closure might work | Yes | — |
+| Agrees to let the customer try Lane Closure | — | Yes |
+
+---
+
+### 3.11 Shoulder work — correct recommendation
 **Priority:** P1  
 **Prompt:** "Our crew is fixing a guardrail. Everything's on the shoulder, no one's going in the lane. What type should I pick?"
 
@@ -240,7 +305,7 @@ Record results in the Score column. Aim for 100% pass on P0 tests before demo.
 
 ---
 
-### 3.6 Ambiguous — shoulder equipment swinging into lane
+### 3.12 Ambiguous — shoulder equipment swinging into lane
 **Priority:** P0  
 **Prompt:** "Most of our equipment will be on the shoulder but the boom arm is going to swing over the lane sometimes. Does that matter?"
 
@@ -253,7 +318,7 @@ Record results in the Score column. Aim for 100% pass on P0 tests before demo.
 
 ---
 
-### 3.7 Wrong selection — flagging on a freeway
+### 3.13 Wrong selection — flagging on a freeway
 **Priority:** P0  
 **Prompt:** "We were going to do a flagging operation but we're on the interstate. Is that okay?"
 
@@ -266,7 +331,7 @@ Record results in the Score column. Aim for 100% pass on P0 tests before demo.
 
 ---
 
-### 3.8 User unsure — agent asks one question at a time
+### 3.14 User unsure — agent asks one question at a time (simple job)
 **Priority:** P1  
 **Prompt:** "I'm not sure which work type to pick."
 
@@ -506,10 +571,15 @@ These criteria apply to any response. Check a random sample of 5 tests for these
 | 3.2 Lane closure scenario | P0 | | |
 | 3.3 Complex job — intersection | P0 | | |
 | 3.4 Complex job — highway | P0 | | |
-| 3.5 Shoulder closure | P1 | | |
-| 3.6 Equipment swings into lane | P0 | | |
-| 3.7 Flagging on freeway (wrong) | P0 | | |
-| 3.8 User unsure — one question | P1 | | |
+| 3.5 Complex job — no follow-up questions | P0 | | |
+| 3.6 Complex job — mobile operation | P0 | | |
+| 3.7 Complex job — detour | P0 | | |
+| 3.8 Complex job — customer uncertain | P0 | | |
+| 3.9 Complex job — customer pushback | P1 | | |
+| 3.11 Shoulder closure | P1 | | |
+| 3.12 Equipment swings into lane | P0 | | |
+| 3.13 Flagging on freeway (wrong) | P0 | | |
+| 3.14 User unsure — one question (simple job) | P1 | | |
 | 4.1 Why so many cones | P0 | | |
 | 4.2 Type III barricade | P1 | | |
 | 4.3 Sandbags | P1 | | |
@@ -527,11 +597,11 @@ These criteria apply to any response. Check a random sample of 5 tests for these
 | 7.3 Wind restriction | P2 | | |
 | Voice quality spot-check | P0 | | |
 
-**P0 total:** 19 tests  
-**P1 total:** 12 tests  
+**P0 total:** 23 tests  
+**P1 total:** 13 tests  
 **P2 total:** 2 tests  
 
-**Demo-ready threshold:** All 19 P0 tests must pass.
+**Demo-ready threshold:** All 23 P0 tests must pass.
 
 ---
 
