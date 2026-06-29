@@ -101,11 +101,16 @@ function InboxContent() {
           const workType = input.work?.description || '—';
           const org = formatOrg(job.metadata?.customer_org || '');
           const taCode = job.metadata?.rulesContext?.taCode;
-          const createdAt = job.metadata?.created_at
-            ? new Date(job.metadata.created_at).toLocaleDateString('en-US', {
-                month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-              })
-            : '';
+          const rawDate = job.metadata?.created_at;
+          const createdAt = (() => {
+            if (!rawDate) return '';
+            const ms = typeof rawDate === 'object' && 'seconds' in rawDate
+              ? (rawDate as { seconds: number }).seconds * 1000
+              : Date.parse(rawDate as string);
+            return isNaN(ms) ? '' : new Date(ms).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+            });
+          })();
 
           return (
             <button
