@@ -13,3 +13,4 @@ public/worker-*.js
 .vercel
 .turbo
 coverage/
+tsconfig.tsbuildinfo
