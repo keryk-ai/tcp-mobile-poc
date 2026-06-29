@@ -1,4 +1,4 @@
-export type NotificationType = 'job_complete' | 'tcp_ready' | 'incentive' | 'estimate_ready';
+export type NotificationType = 'job_complete' | 'tcp_ready' | 'incentive' | 'partner_offer' | 'algo_insight';
 
 export interface AppNotification {
   id: string;
@@ -42,17 +42,28 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'notif-004',
-    type: 'estimate_ready',
-    title: 'Site Estimate Ready',
-    message: 'Your AI-generated site configuration is ready to review. Bill of materials includes 110 cones, 12 sign stands, and flagging crew.',
+    type: 'algo_insight',
+    title: 'Upcoming Job Predicted — Ballantyne Corridor',
+    message: 'Your teams ran 4 underground jobs on the Ballantyne fiber corridor in May and June. We\'re projecting a 5th job in the same zone around July 7–10, consistent with Verizon\'s quarterly expansion cadence. Friday July 11 has full crew availability and qualifies for the 5% Friday rate.',
     timestamp: '3 days ago',
+    read: false,
+    actionLabel: 'Pre-Book Crew',
+  },
+  {
+    id: 'notif-005',
+    type: 'partner_offer',
+    title: 'AWP Partner Offer — National Traffic Safety Supply',
+    message: 'Exclusive for Verizon crews: pre-staged TA-30 sign packages delivered to your Charlotte job sites. All signs, stands, and sandbags — ready to deploy. 15% off your first order, valid through July 15.',
+    timestamp: '4 days ago',
     read: true,
+    actionLabel: 'View Offer',
   },
 ];
 
 export const TYPE_CONFIG: Record<NotificationType, { icon: string; accent: string; iconBg: string }> = {
-  job_complete:   { icon: '✓',  accent: 'border-emerald-400', iconBg: 'bg-emerald-100 text-emerald-700' },
-  tcp_ready:      { icon: '📋', accent: 'border-blue-400',    iconBg: 'bg-blue-100 text-blue-700'      },
-  incentive:      { icon: '%',  accent: 'border-[hsl(25,100%,50%)]', iconBg: 'bg-orange-100 text-orange-600' },
-  estimate_ready: { icon: '⚡', accent: 'border-purple-400',  iconBg: 'bg-purple-100 text-purple-700'  },
+  job_complete:  { icon: '✓',  accent: 'border-emerald-400',          iconBg: 'bg-emerald-100 text-emerald-700'  },
+  tcp_ready:     { icon: '📋', accent: 'border-blue-400',             iconBg: 'bg-blue-100 text-blue-700'        },
+  incentive:     { icon: '%',  accent: 'border-[hsl(25,100%,50%)]',   iconBg: 'bg-orange-100 text-orange-600'    },
+  algo_insight:  { icon: '✦',  accent: 'border-violet-400',           iconBg: 'bg-violet-100 text-violet-700'    },
+  partner_offer: { icon: '★',  accent: 'border-sky-400',              iconBg: 'bg-sky-100 text-sky-700'          },
 };
