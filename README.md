@@ -1,14 +1,17 @@
 # tcp-mobile-poc
 
-Customer-facing mobile PWA for AWP enterprise customers to request traffic control plan estimates.
+Customer-facing mobile PWA for AWP enterprise customers to request traffic control plan estimates, view site status, schedule crews, and interact with an AI traffic safety expert.
+
+**Live deployment:** `https://awp.dev.keryk.ai`
 
 ## Stack
 
-- Next.js 15 (App Router) + TypeScript
+- Next.js 15 (App Router) + TypeScript strict mode
 - Tailwind CSS v4
-- Firebase JS SDK (auth + Firestore)
+- Firebase JS SDK v11 (auth + Firestore `onSnapshot`)
 - Leaflet 1.9 (map with A/B pin placement)
-- next-pwa (installable PWA)
+- ElevenLabs Conversational AI widget (`elevenlabs-convai` web component)
+- Docker + Coolify deployment
 
 ## Setup
 
@@ -17,8 +20,10 @@ Customer-facing mobile PWA for AWP enterprise customers to request traffic contr
 ```bash
 git clone https://github.com/keryk-ai/tcp-mobile-poc
 cd tcp-mobile-poc
-npm install
+npm install --legacy-peer-deps
 ```
+
+> `--legacy-peer-deps` is required: `react-leaflet@4.2.1` declares a React 18 peer dep but works fine with React 19.
 
 ### 2. Configure environment
 
@@ -26,12 +31,27 @@ npm install
 cp .env.example .env.local
 ```
 
-Fill in `.env.local` with:
-- Firebase project config (from Firebase console → Project settings → Your apps)
-- `RELAY_URL` — TCP relay endpoint
-- `SERVICE_AUTH_KEY` — relay service auth key
-- `NEXT_PUBLIC_MAPBOX_TOKEN` — from Infisical (TCP project)
-- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — from Infisical (TCP project)
+Fill in `.env.local`:
+
+```env
+# Firebase (client-side)
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+
+# Relay
+RELAY_URL=https://tcp-relay.dev.keryk.ai   # server-side only
+SERVICE_AUTH_KEY=                           # injected by /api/estimate-proxy
+
+# Maps
+NEXT_PUBLIC_MAPBOX_TOKEN=                  # Mapbox satellite tile layer
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=           # geocode fallback
+
+# ElevenLabs
+NEXT_PUBLIC_AWP_AGENT_ID=agent_8301kw2ea0h1ex0af3yjjee8kwef
+```
 
 ### 3. Run dev server
 
@@ -39,40 +59,82 @@ Fill in `.env.local` with:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) on a mobile browser or use Chrome DevTools mobile emulation.
+Open [http://localhost:3000](http://localhost:3000) on a mobile browser or use Chrome DevTools mobile emulation (iPhone 14 Pro recommended).
 
-## Firebase Emulator (optional)
+## Features
 
-To test auth without real Firebase credentials:
+### Authentication
+Firebase email/password login. Custom claim `org` scopes each user to their organization (e.g., `"verizon"`). Auth guard via Next.js middleware.
 
-```bash
-firebase emulators:start --only auth,firestore
-```
+### Home — Map View
+Three-tab interface showing all sites for the user's org:
+- **New Sites** (orange) — AI estimates generated, not yet scheduled
+- **Scheduled** (amber) — booked crew with date, weather forecast, nearby work, and permit restrictions
+- **Completed** (green) — finished jobs with downloadable invoice
 
-Set `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=localhost:9099` and configure emulator in `src/lib/firebase.ts`.
+Bell icon in header shows unread notifications (job complete, TCP ready, incentive, predicted job alert, partner offer).
 
-## Week 1 Features (this build)
+### Request Flow (4 steps)
+1. **Details** — Work Order #, address (with GPS auto-fill), time of day, construction type
+2. **Map** — Leaflet A/B pin placement; distance and direction auto-calculated
+3. **Work Type** — Flagging (TA-10), Lane Closure (TA-30/30R/33), Complex Job — Request a TCP, or Shoulder Closure (coming soon)
+4. **Review** — Confirm and submit to relay; navigate to inbox on success
 
-- **Auth**: Firebase email/password login, session persistence, auth guard, logout
-- **Home**: 4-card dashboard with AWP branding
-- **Request flow**: 4-step form (Job Details → Map → Work Type → Review)
-- **Map**: Leaflet pin placement with street/satellite toggle, distance/direction auto-calc
-- **Submit**: POST to relay via `/api/estimate-proxy`, loading state, navigate to inbox on success
-- **Inbox**: Org-scoped job list, job detail bottom sheet
+**Complex Job path:** Bypasses the AI estimate entirely — sends site details to an AWP engineer who delivers a compliant TCP within 72 hours. Shows a sending overlay and returns to home.
 
-## Week 2 Features (upcoming)
+### Job Detail Sheet
+Opens as a bottom sheet from the inbox or New Sites list. Shows:
+- AI-generated plan image + BOM (signs, devices, cones, stands, sandbags)
+- Action buttons: Analyze Site Risks (coming soon), Request a Quote (coming soon), Request a TCP (live), Schedule a Crew (live)
 
-- Full inbox with real-time Firestore updates
-- Job detail: pinch-zoom plan image, full BOM, download
-- ElevenLabs voice AI assistant
+### Schedule a Crew
+Two-week calendar with weather forecast and crew availability per day. Fridays include a 5% discount badge. Confirm to book; success state returns to site detail.
 
-## PWA Icons
+### Notifications
+Five types: job complete, TCP ready, incentive, predicted job alert (behavioral analytics), partner offer. Unread badge on bell icon. Action links deep-link to relevant demo sites.
 
-The manifest currently references `awp-logo.jpg` as a placeholder. For production-quality PWA installability, replace with proper 192×192 and 512×512 PNG files at `public/icons/icon-192.png` and `public/icons/icon-512.png`, then update `public/manifest.json`.
+### AI Voice Assistant
+ElevenLabs `elevenlabs-convai` web component embedded in the request flow. Activated from the "Not sure? Ask the AWP AI Expert" link on the work-type step. Agent system prompt at `awp-traffic-safety-ai-system-prompt.md` (v1.7).
+
+### Demo Data
+Two hardcoded demo sites in `src/lib/demoData.ts`:
+- `demo-scheduled-001` — Duke Energy, 7936 Old Salisbury Rd, Linwood NC (July 15 2026)
+- `demo-completed-001` — Verizon, 4400 Sharon Rd, Charlotte NC (completed June 15 2026)
 
 ## Architecture Notes
 
-- Auth guard: Next.js middleware checks `firebase-auth` cookie (set after login, cleared on logout)
-- Form state: `sessionStorage` via `src/lib/formState.ts`, cleared on submit or abandon
-- Estimate submission: client → `/api/estimate-proxy` → relay (relay holds connection ~3–5s, returns `transaction_id` on success)
-- Job detail: Firestore `onSnapshot` on `tcp_estimates_V1/{transactionId}`
+- **Auth guard:** Next.js middleware checks `firebase-auth` cookie; set after login, cleared on logout
+- **Form state:** `sessionStorage` via `src/lib/formState.ts`; cleared on submit or abandon. `clearFormState()` is called after Complex Job submission.
+- **Estimate submission:** client → `/api/estimate-proxy` → relay (~3–5s sync); navigates to inbox on `200`
+- **Real-time updates:** Firestore `onSnapshot` on org-scoped query and individual job docs
+- **ElevenLabs widget:** Dynamic variables injected as JSON attribute: `user_email`, `session_tenant_id`, `session_id`, `job_id`, `session_agent_id`, `location_lat`, `location_lng`
+- **Leaflet + React 19:** `_leaflet_id` cleared on map container ref to fix StrictMode double-invoke
+- **React 19 JSX:** Custom web component types declared via `declare module 'react' { namespace JSX { ... } }` (not `declare global`)
+
+## Deployment
+
+Docker multi-stage build. **Must use `--platform linux/amd64`** — Coolify runs on amd64; Mac M-series builds arm64 by default.
+
+```bash
+docker buildx build --platform linux/amd64 --push \
+  -t ghcr.io/keryk-ai/tcp-mobile-poc:latest \
+  -f Dockerfile .
+```
+
+Build args baked at build time (NEXT_PUBLIC_* vars must be passed as `--build-arg`). See Dockerfile.
+
+## Test Accounts
+
+Two demo accounts provisioned with `org: 'verizon'` Firebase custom claim:
+- `john.candelaria@awpsafety.com`
+- `josh.shipman@awpsafety.com`
+
+## Related Documents
+
+| Document | Purpose |
+|---|---|
+| `tcp-mobile-poc-spec.md` | Full product specification |
+| `mobile-poc-user-stories.md` | User stories and acceptance criteria |
+| `awp-traffic-safety-ai-system-prompt.md` | ElevenLabs agent system prompt (v1.7) |
+| `elevenlabs-agent-evals.md` | Agent QA test suite (33 tests, 23 P0) |
+| `elevenlabs-agent-config.json` | Agent config snapshot |
