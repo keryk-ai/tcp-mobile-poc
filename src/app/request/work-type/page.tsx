@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import StepNav from '@/components/StepNav';
 import ComingSoonSheet from '@/components/ComingSoonSheet';
 import { getFormState, setFormState, clearFormState } from '@/lib/formState';
+import { checkTACompatibility, type TACompatibilityResult } from '@/lib/taCompatibility';
 import type { WorkType, LaneSide } from '@/types/estimate';
 
 const DIRECTIONS = ['Northbound', 'Southbound', 'Eastbound', 'Westbound', 'Northeastbound', 'Southeastbound', 'Southwestbound', 'Northwestbound'];
@@ -14,14 +15,18 @@ export default function WorkTypePage() {
   const [workType, setWorkType] = useState<WorkType | null>(null);
   const [selectedLane, setSelectedLane] = useState<LaneSide | null>(null);
   const [direction, setDirection] = useState('');
+  const [pinA, setPinA] = useState<{ lat: number; lng: number } | null>(null);
   const [showShoulderSheet, setShowShoulderSheet] = useState(false);
   const [sending, setSending] = useState(false);
+  const [checkingRoad, setCheckingRoad] = useState(false);
+  const [mismatch, setMismatch] = useState<TACompatibilityResult | null>(null);
 
   useEffect(() => {
     const state = getFormState();
     setWorkType(state.workType);
     setSelectedLane(state.selectedLane);
     setDirection(state.direction || '');
+    setPinA(state.pinA);
   }, []);
 
   const isValid =
@@ -30,7 +35,13 @@ export default function WorkTypePage() {
     : workType === 'tcp-request' ? true
     : false;
 
-  const handleNext = () => {
+  const selectWorkType = (type: WorkType) => {
+    setWorkType(type);
+    setMismatch(null);
+    if (type !== 'lane-closure') setSelectedLane(null);
+  };
+
+  const handleNext = async () => {
     if (workType === 'tcp-request') {
       setSending(true);
       setFormState({ workType, selectedLane: null, direction: '' });
@@ -40,27 +51,59 @@ export default function WorkTypePage() {
       }, 2200);
       return;
     }
+
+    if (workType === 'flagging' && pinA) {
+      setCheckingRoad(true);
+      try {
+        const res = await fetch('/api/ta-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat: pinA.lat, lon: pinA.lng }),
+        });
+        if (res.ok) {
+          const data = await res.json() as { road: Parameters<typeof checkTACompatibility>[1] | null };
+          if (data.road) {
+            const result = checkTACompatibility('TA-10', data.road);
+            if (result && !result.compatible) {
+              setMismatch(result);
+              setCheckingRoad(false);
+              return;
+            }
+          }
+        }
+        // Geocoder unreachable or returned no road data — fail open, proceed.
+      } catch {
+        // Fail open — don't block submission on an advisory check failing.
+      }
+      setCheckingRoad(false);
+    }
+
     setFormState({ workType, selectedLane, direction });
     router.push('/request/review');
   };
 
   return (
     <div className="flex flex-col flex-1">
-      <StepNav currentStep={3} onNext={handleNext} nextDisabled={!isValid} />
+      <StepNav
+        currentStep={3}
+        onNext={handleNext}
+        nextDisabled={!isValid || checkingRoad}
+        nextLabel={checkingRoad ? 'Checking road…' : 'Next →'}
+      />
 
       <div className="flex-1 px-4 pb-6 space-y-3">
         <div className="text-sm font-semibold text-gray-700 mb-2">Work Type</div>
 
         {/* Flagging */}
         <button
-          onClick={() => { setWorkType('flagging'); setSelectedLane(null); }}
+          onClick={() => selectWorkType('flagging')}
           className={`w-full p-4 rounded-xl border-2 text-left flex items-center gap-3 transition-colors ${
             workType === 'flagging' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
           }`}
         >
           <div className="flex-1">
             <div className="font-semibold text-gray-900">Flagging</div>
-            <div className="text-xs text-gray-500 mt-0.5">TA-10 — single flagger operation</div>
+            <div className="text-xs text-gray-500 mt-0.5">TA-10 — single flagger operation, 2-lane roads only</div>
           </div>
           {workType === 'flagging' && (
             <div className="w-5 h-5 rounded-full bg-[hsl(25,100%,50%)] flex items-center justify-center shrink-0">
@@ -69,9 +112,26 @@ export default function WorkTypePage() {
           )}
         </button>
 
+        {/* Road type mismatch — hard block, no bypass */}
+        {mismatch && !mismatch.compatible && (
+          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+            <p className="text-sm font-semibold text-red-800">⚠ Road Type Mismatch</p>
+            <p className="text-sm text-red-700 mt-1">
+              This location is a {mismatch.roadLabel} ({mismatch.lanes} lanes). Flagging (TA-10) is only
+              valid on 2-lane roads. Please select <strong>Lane Closure</strong> instead.
+            </p>
+            <button
+              onClick={() => selectWorkType('lane-closure')}
+              className="text-sm font-semibold text-red-700 mt-2 underline"
+            >
+              Switch to Lane Closure
+            </button>
+          </div>
+        )}
+
         {/* Lane Closure */}
         <button
-          onClick={() => setWorkType('lane-closure')}
+          onClick={() => selectWorkType('lane-closure')}
           className={`w-full p-4 rounded-xl border-2 text-left flex items-center gap-3 transition-colors ${
             workType === 'lane-closure' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
           }`}
@@ -89,7 +149,7 @@ export default function WorkTypePage() {
 
         {/* Complex Job: Request a TCP */}
         <button
-          onClick={() => { setWorkType('tcp-request'); setSelectedLane(null); }}
+          onClick={() => selectWorkType('tcp-request')}
           className={`w-full p-4 rounded-xl border-2 text-left flex items-center gap-3 transition-colors ${
             workType === 'tcp-request' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
           }`}
