@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { verifyFirebaseIdToken } from '@/lib/verifyToken';
 
 const PROXY_TIMEOUT_MS = 60000;
 
@@ -26,6 +27,11 @@ export async function POST(request: NextRequest) {
 
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+  }
+
+  const user = await verifyFirebaseIdToken(authHeader);
+  if (!user) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
   }
 
