@@ -7,11 +7,13 @@
     "build": "infisical run -- next build",
     "build:docker": "next build",
     "start": "infisical run -- next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "firebase": "^11.0.0",
+    "jose": "^6.2.3",
     "leaflet": "^1.9.4",
     "next": "^15.3.4",
     "react": "^19.0.0",
@@ -25,6 +27,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "tailwindcss": "^4.1.10",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.9"
   }
 }
