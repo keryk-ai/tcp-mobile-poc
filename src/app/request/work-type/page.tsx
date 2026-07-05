@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import StepNav from '@/components/StepNav';
 import ComingSoonSheet from '@/components/ComingSoonSheet';
 import { getFormState, setFormState, clearFormState } from '@/lib/formState';
+import { getIdToken } from '@/lib/auth';
 import { checkTACompatibility, type TACompatibilityResult } from '@/lib/taCompatibility';
 import type { WorkType, LaneSide } from '@/types/estimate';
 
@@ -55,9 +56,13 @@ export default function WorkTypePage() {
     if (workType === 'flagging' && pinA) {
       setCheckingRoad(true);
       try {
+        const token = await getIdToken();
         const res = await fetch('/api/ta-check', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({ lat: pinA.lat, lon: pinA.lng }),
         });
         if (res.ok) {

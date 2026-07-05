@@ -1,8 +1,17 @@
 import { NextRequest } from 'next/server';
+import { verifyFirebaseIdToken } from '@/lib/verifyToken';
 
 const TIMEOUT_MS = 10000;
 
 export async function POST(request: NextRequest) {
+  const user = await verifyFirebaseIdToken(request.headers.get('authorization'));
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const svc1Url = process.env.SVC1_ENRICH_URL;
   if (!svc1Url) {
     return new Response(JSON.stringify({ error: 'SVC1_ENRICH_URL not configured' }), { status: 503 });
