@@ -49,3 +49,14 @@ export const signOut = async () => {
 
 export { onAuthStateChanged };
 export type { User };
+
+export const getIdToken = async (): Promise<string | null> => {
+  try {
+    const { auth } = await initializeFirebase();
+    const user = auth?.currentUser;
+    if (!user) return null;
+    return await user.getIdToken();
+  } catch {
+    return null;
+  }
+};
