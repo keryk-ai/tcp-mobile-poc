@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import StepNav from '@/components/StepNav';
 import { getFormState, setFormState } from '@/lib/formState';
+import { getIdToken } from '@/lib/auth';
 import type { TimeOfDay, ConstructionType } from '@/types/estimate';
 
 type GpsState = 'idle' | 'loading' | 'error';
@@ -36,8 +37,10 @@ export default function DetailsPage() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
+          const token = await getIdToken();
           const res = await fetch(
-            `/api/geocode/reverse?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`
+            `/api/geocode/reverse?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`,
+            { headers: token ? { Authorization: `Bearer ${token}` } : {} },
           );
           if (!res.ok) throw new Error('reverse geocode failed');
           const { address: resolved } = await res.json() as { address: string };

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { verifyFirebaseIdToken } from '@/lib/verifyToken';
 
 interface GeoResult {
   display_name: string;
@@ -44,6 +45,14 @@ async function googleMapsSearch(q: string, limit: string): Promise<GeoResult[]> 
 }
 
 export async function GET(request: NextRequest) {
+  const user = await verifyFirebaseIdToken(request.headers.get('authorization'));
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
   const limit = searchParams.get('limit') || '5';

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import StepNav from '@/components/StepNav';
 import { getFormState, setFormState } from '@/lib/formState';
+import { getIdToken } from '@/lib/auth';
 import { useCallback } from 'react';
 import type { PinCoord } from '@/components/PinMap';
 
@@ -35,14 +36,20 @@ export default function MapPage() {
 
     // Geocode Step 1 address to center map
     if (state.address && !state.pinA) {
-      fetch(`/api/geocode?q=${encodeURIComponent(state.address)}&limit=1`)
-        .then((r) => r.json())
-        .then((results) => {
+      (async () => {
+        try {
+          const token = await getIdToken();
+          const r = await fetch(`/api/geocode?q=${encodeURIComponent(state.address)}&limit=1`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          const results = (await r.json()) as Array<{ lat: string; lon: string }>;
           if (results[0]) {
             setInitialCenter({ lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) });
           }
-        })
-        .catch(() => {});
+        } catch {
+          // best-effort map centering — ignore failures (existing behavior)
+        }
+      })();
     } else if (state.pinA) {
       setInitialCenter(state.pinA);
     }
