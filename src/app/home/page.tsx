@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useAuth } from '@/components/AuthContext';
+import AppShell from '@/components/AppShell';
 import ComingSoonSheet from '@/components/ComingSoonSheet';
 import JobDetailSheet from '@/components/JobDetailSheet';
 import DemoSiteSheet from '@/components/DemoSiteSheet';
@@ -123,6 +124,7 @@ export default function HomePage() {
   }, [jobs, activeTab]);
 
   return (
+    <AppShell>
     <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
       <header className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 border-b border-gray-100 bg-white z-10">
@@ -442,5 +444,6 @@ export default function HomePage() {
         org={userOrg}
       />
     </div>
+    </AppShell>
   );
 }

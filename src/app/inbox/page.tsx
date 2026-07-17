@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthContext';
+import AppShell from '@/components/AppShell';
 import JobDetailSheet from '@/components/JobDetailSheet';
 import StatusBadge from '@/components/StatusBadge';
 import type { EstimateDoc } from '@/types/estimate';
@@ -152,8 +153,10 @@ function InboxContent() {
 
 export default function InboxPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 rounded-full border-3 border-[hsl(25,100%,50%)] border-t-transparent animate-spin" /></div>}>
-      <InboxContent />
-    </Suspense>
+    <AppShell>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 rounded-full border-3 border-[hsl(25,100%,50%)] border-t-transparent animate-spin" /></div>}>
+        <InboxContent />
+      </Suspense>
+    </AppShell>
   );
 }
