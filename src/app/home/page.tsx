@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useAuth } from '@/components/AuthContext';
 import AppShell from '@/components/AppShell';
-import ComingSoonSheet from '@/components/ComingSoonSheet';
 import JobDetailSheet from '@/components/JobDetailSheet';
 import DemoSiteSheet from '@/components/DemoSiteSheet';
 import NotificationSheet from '@/components/NotificationSheet';
@@ -22,21 +21,20 @@ import { MOCK_NOTIFICATIONS } from '@/lib/notifications';
 
 const SiteMapView = dynamic(() => import('@/components/SiteMapView'), {
   ssr: false,
-  loading: () => <div className="w-full h-full bg-gray-100 animate-pulse" />,
+  loading: () => <div className="absolute inset-0 bg-gray-100 dark:bg-neutral-800 animate-pulse" />,
 });
 
 const AWP_AGENT_ID = process.env.NEXT_PUBLIC_AWP_AGENT_ID ?? 'agent_8301kw2ea0h1ex0af3yjjee8kwef';
 
+type HomeTab = 'new' | 'scheduled' | 'completed';
+
 export default function HomePage() {
   const { user, signOut } = useAuth();
-  const router = useRouter();
   const [jobs, setJobs] = useState<EstimateDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [activeDemoSite, setActiveDemoSite] = useState<DemoSite | null>(null);
-  const [activeTab, setActiveTab] = useState<'new' | 'scheduled' | 'completed'>('new');
-  const [showFutureFeature, setShowFutureFeature] = useState(false);
-  const [showThirdPartyFeature, setShowThirdPartyFeature] = useState(false);
+  const [activeTab, setActiveTab] = useState<HomeTab>('new');
   const [showNotifications, setShowNotifications] = useState(false);
   const [readNotifIds, setReadNotifIds] = useState<Set<string>>(new Set());
 
@@ -123,11 +121,13 @@ export default function HomePage() {
     return result;
   }, [jobs, activeTab]);
 
+  const tabLabel = (tab: HomeTab) =>
+    tab === 'new' ? 'New Sites' : tab === 'scheduled' ? 'Scheduled' : 'Completed';
+
   return (
     <AppShell>
-    <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 border-b border-gray-100 bg-white z-10">
+      <header className="shrink-0 relative flex items-center justify-between px-4 pt-safe pt-4 pb-3 border-b border-gray-100 dark:border-neutral-800">
         <div className="flex flex-col gap-0.5">
           <Image
             src="/awp-logo-horizontal.jpg"
@@ -141,28 +141,27 @@ export default function HomePage() {
         <div className="flex items-center gap-2 relative">
           {/* Notification bell */}
           <button
+            type="button"
             onClick={() => setShowNotifications(true)}
-            className="relative w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 active:bg-gray-200"
+            className="relative w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800 active:bg-gray-200 dark:active:bg-neutral-700"
             aria-label="Notifications"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 17H9m6 0a2 2 0 01-4 0m4 0H9m6 0V11a6 6 0 10-12 0v6m12 0H9" />
-              <path d="M18 8a6 6 0 00-12 0v6l-1.5 1.5h15L18 14V8z" strokeLinejoin="round" />
-            </svg>
+            <span className="text-base">🔔</span>
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[hsl(25,100%,50%)] text-white text-[9px] font-bold flex items-center justify-center">
-                {unreadCount}
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[hsl(25,100%,50%)] flex items-center justify-center">
+                <span className="text-[9px] font-bold text-white">{unreadCount}</span>
               </span>
             )}
           </button>
 
           <div className="text-right mr-1">
-            <div className="text-xs font-semibold text-gray-900">Hi, {displayName}</div>
+            <div className="text-xs font-semibold text-gray-900 dark:text-white">Hi, {displayName}</div>
             {userOrg && (
               <div className="text-[10px] text-gray-400 leading-tight">{formatOrg(userOrg)}</div>
             )}
           </div>
           <button
+            type="button"
             onClick={() => setShowLogoutMenu(!showLogoutMenu)}
             className="w-9 h-9 rounded-full bg-[hsl(25,100%,50%)] text-white font-bold text-sm flex items-center justify-center"
             aria-label="Profile"
@@ -173,11 +172,12 @@ export default function HomePage() {
           {showLogoutMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowLogoutMenu(false)} />
-              <div className="absolute right-0 top-11 z-20 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden min-w-[140px]">
-                <div className="px-4 py-2.5 text-xs text-gray-500 border-b border-gray-100">
+              <div className="absolute right-0 top-11 z-20 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-gray-200 dark:border-neutral-700 overflow-hidden min-w-[140px]">
+                <div className="px-4 py-2.5 text-xs text-gray-500 border-b border-gray-100 dark:border-neutral-700">
                   {user?.email}
                 </div>
                 <button
+                  type="button"
                   onClick={async () => { setShowLogoutMenu(false); await signOut(); }}
                   className="w-full text-left px-4 py-3 text-sm font-semibold text-red-600"
                 >
@@ -190,26 +190,29 @@ export default function HomePage() {
       </header>
 
       {/* Tab pills */}
-      <div className="flex gap-2 px-4 py-2.5 border-b border-gray-100 bg-white">
+      <div className="shrink-0 flex gap-2 px-4 py-2.5 border-b border-gray-100 dark:border-neutral-800">
         {(['new', 'scheduled', 'completed'] as const).map((tab) => (
           <button
             key={tab}
+            type="button"
             onClick={() => setActiveTab(tab)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
               activeTab === tab
                 ? tab === 'new' ? 'bg-[hsl(25,100%,50%)] text-white'
                   : tab === 'scheduled' ? 'bg-amber-500 text-white'
                   : 'bg-emerald-500 text-white'
-                : 'bg-gray-100 text-gray-500'
+                : 'bg-gray-100 dark:bg-neutral-800 text-gray-500'
             }`}
           >
-            {tab === 'new' ? 'New Sites' : tab === 'scheduled' ? 'Scheduled' : 'Completed'}
+            {tabLabel(tab)}
           </button>
         ))}
       </div>
 
-      {/* Site Map */}
-      <div className="relative h-[40vh] w-full border-b border-gray-200">
+      {/* Site Map — the hero element: absorbs whatever space the compact list/
+          footer below it don't need, with a floor so tiny screens still get a
+          usable map. */}
+      <div className="flex-1 min-h-[220px] w-full border-b border-gray-200 dark:border-neutral-800 relative">
         <SiteMapView
           pins={pins}
           onPinClick={(jobId) => {
@@ -217,21 +220,21 @@ export default function HomePage() {
             if (demo) { setActiveDemoSite(demo); } else { setActiveJobId(jobId); }
           }}
         />
-        {/* Map overlay CTA */}
-        <button
-          onClick={() => { clearFormState(); router.push('/request/details'); }}
-          className="absolute top-3 left-3 z-[1000] flex items-center gap-1.5 bg-[hsl(25,100%,50%)] text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg active:opacity-85"
-          style={{ WebkitTapHighlightColor: 'transparent' }}
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          New Site
-        </button>
+        {activeTab === 'new' && (
+          <Link
+            href="/request/details"
+            onClick={() => clearFormState()}
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1.5 bg-[hsl(25,100%,50%)] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg active:opacity-85"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            ＋ Add New Site
+          </Link>
+        )}
       </div>
 
-      {/* Site list */}
-      <div className="px-4 pt-4 pb-2">
+      {/* Site list — compact fixed height (~3 rows) now that the map is the
+          hero; the only scrolling region on this screen besides the map. */}
+      <div className="shrink-0 px-4 pt-4 pb-2">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
             {activeTab === 'new' ? 'New Sites' : activeTab === 'scheduled' ? 'Scheduled Sites' : 'Completed Sites'}
@@ -241,148 +244,82 @@ export default function HomePage() {
           )}
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          {/* Demo: scheduled sites */}
-          {activeTab === 'scheduled' && (
-            <div className="divide-y divide-gray-100">
-              {DEMO_SITES.filter(s => s.type === 'scheduled').map((site) => (
-                <button
-                  key={site.id}
-                  onClick={() => setActiveDemoSite(site)}
-                  className="w-full text-left px-4 py-3.5 active:bg-gray-50 flex items-center gap-3"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 text-sm truncate">Job {site.jobName}</div>
-                    <div className="text-xs text-gray-500 truncate mt-0.5">{site.address}, {site.city}</div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-gray-400">{site.scheduledDate}</span>
-                    <span className="inline-flex items-center gap-1 rounded-full border font-semibold px-2 py-0.5 text-xs bg-amber-50 text-amber-700 border-amber-200">Scheduled</span>
-                    <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Demo: completed sites */}
-          {activeTab === 'completed' && (
-            <div className="divide-y divide-gray-100">
-              {DEMO_SITES.filter(s => s.type === 'completed').map((site) => (
-                <button
-                  key={site.id}
-                  onClick={() => setActiveDemoSite(site)}
-                  className="w-full text-left px-4 py-3.5 active:bg-gray-50 flex items-center gap-3"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 text-sm truncate">Job {site.jobName}</div>
-                    <div className="text-xs text-gray-500 truncate mt-0.5">{site.address}, {site.city}</div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-gray-400">{site.completedDate}</span>
-                    <span className="inline-flex items-center gap-1 rounded-full border font-semibold px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 border-emerald-200">Completed</span>
-                    <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* New sites: Firestore jobs */}
-          {activeTab === 'new' && loading && (
-            <div className="divide-y divide-gray-100">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="px-4 py-3.5 flex items-center gap-3">
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3.5 w-24 bg-gray-100 rounded animate-pulse" />
-                    <div className="h-3 w-40 bg-gray-100 rounded animate-pulse" />
-                  </div>
-                  <div className="h-6 w-16 bg-gray-100 rounded-full animate-pulse" />
+        <div className="h-44 rounded-xl border border-gray-200 dark:border-neutral-700 overflow-hidden">
+          <div className="h-full overflow-y-auto">
+            {/* Demo: scheduled / completed sites */}
+            {activeTab !== 'new' && DEMO_SITES.filter(s => s.type === activeTab).map((site) => (
+              <button
+                key={site.id}
+                type="button"
+                onClick={() => setActiveDemoSite(site)}
+                className="w-full text-left px-4 py-3.5 active:bg-gray-50 dark:active:bg-neutral-800 flex items-center gap-3 border-b border-gray-100 dark:border-neutral-800"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 dark:text-white text-sm truncate">Job {site.jobName}</div>
+                  <div className="text-xs text-gray-500 truncate mt-0.5">{site.address}, {site.city}</div>
                 </div>
-              ))}
-            </div>
-          )}
+                <span className="text-xs text-gray-400 shrink-0">{activeTab === 'scheduled' ? site.scheduledDate : site.completedDate}</span>
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${activeTab === 'scheduled' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                  {activeTab === 'scheduled' ? 'Scheduled' : 'Completed'}
+                </span>
+              </button>
+            ))}
 
-          {activeTab === 'new' && !loading && jobs.length === 0 && (
-            <div className="py-8 text-center px-4">
-              <p className="text-gray-400 text-sm">No sites yet.</p>
-              <p className="text-gray-400 text-xs mt-1">Tap <strong>+ New Site</strong> on the map to get started.</p>
-            </div>
-          )}
+            {/* New sites: Firestore jobs */}
+            {activeTab === 'new' && loading && (
+              [0, 1, 2].map((i) => (
+                <div key={i} className="px-4 py-3.5 flex items-center gap-3 border-b border-gray-100 dark:border-neutral-800">
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 w-24 bg-gray-100 dark:bg-neutral-800 rounded animate-pulse" />
+                    <div className="h-3 w-40 bg-gray-100 dark:bg-neutral-800 rounded animate-pulse" />
+                  </div>
+                  <div className="h-6 w-16 bg-gray-100 dark:bg-neutral-800 rounded-full animate-pulse" />
+                </div>
+              ))
+            )}
 
-          {activeTab === 'new' && !loading && jobs.length > 0 && (
-            <div className="divide-y divide-gray-100 max-h-[13.5rem] overflow-y-auto">
-              {jobs.map((job) => {
-                const status = getJobStatus(job);
-                const input = parseJobInput(job);
-                const address = input.location?.address || '—';
-                const workOrderId = input.workOrderId || job.id.slice(0, 8);
-                const rawDate = job.metadata?.created_at;
-                const createdAt = (() => {
-                  if (!rawDate) return '';
-                  const ms = typeof rawDate === 'object' && 'seconds' in rawDate
-                    ? (rawDate as { seconds: number }).seconds * 1000
-                    : Date.parse(rawDate as string);
-                  return isNaN(ms) ? '' : new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                })();
-                return (
-                  <button
-                    key={job.id}
-                    onClick={() => setActiveJobId(job.id)}
-                    className="w-full text-left px-4 py-3.5 active:bg-gray-50 flex items-center gap-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 text-sm truncate">{workOrderId}</div>
-                      <div className="text-xs text-gray-500 truncate mt-0.5">{address}</div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {createdAt && <span className="text-xs text-gray-400">{createdAt}</span>}
-                      <StatusBadge status={status} small />
-                      <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+            {activeTab === 'new' && !loading && jobs.length === 0 && (
+              <div className="py-8 text-center px-4">
+                <p className="text-gray-400 text-sm">No sites yet.</p>
+                <p className="text-gray-400 text-xs mt-1">Tap <strong className="font-bold">Add New Site</strong> on the map to get started.</p>
+              </div>
+            )}
+
+            {activeTab === 'new' && !loading && jobs.map((job) => {
+              const status = getJobStatus(job);
+              const input = parseJobInput(job);
+              const address = input.location?.address || '—';
+              const workOrderId = input.workOrderId || job.id.slice(0, 8);
+              const rawDate = job.metadata?.created_at;
+              const createdAt = (() => {
+                if (!rawDate) return '';
+                const ms = typeof rawDate === 'object' && 'seconds' in rawDate
+                  ? (rawDate as { seconds: number }).seconds * 1000
+                  : Date.parse(rawDate as string);
+                return isNaN(ms) ? '' : new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              })();
+              return (
+                <button
+                  key={job.id}
+                  type="button"
+                  onClick={() => setActiveJobId(job.id)}
+                  className="w-full text-left px-4 py-3.5 active:bg-gray-50 dark:active:bg-neutral-800 flex items-center gap-3 border-b border-gray-100 dark:border-neutral-800"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{workOrderId}</div>
+                    <div className="text-xs text-gray-500 truncate mt-0.5">{address}</div>
+                  </div>
+                  <span className="text-xs text-gray-400 shrink-0">{createdAt}</span>
+                  <StatusBadge status={status} small />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Future Feature cards */}
-      <div className="px-4 pt-3 grid grid-cols-2 gap-3">
-        <button
-          onClick={() => setShowFutureFeature(true)}
-          className="rounded-xl border-2 border-dashed border-gray-200 p-4 text-left active:bg-gray-50 flex flex-col gap-2"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-base">✦</span>
-            <span className="text-[10px] font-semibold bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full">Soon</span>
-          </div>
-          <div>
-            <div className="font-semibold text-gray-400 text-sm leading-tight">Future Feature</div>
-            <div className="text-xs text-gray-400 mt-0.5 leading-tight">Download from the AWP App Store</div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => setShowThirdPartyFeature(true)}
-          className="rounded-xl border-2 border-dashed border-gray-200 p-4 text-left active:bg-gray-50 flex flex-col gap-2"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-base">✦</span>
-            <span className="text-[10px] font-semibold bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full">Soon</span>
-          </div>
-          <div>
-            <div className="font-semibold text-gray-400 text-sm leading-tight">Future Feature — 3rd Party</div>
-            <div className="text-xs text-gray-400 mt-0.5 leading-tight">Download from the AWP App Store</div>
-          </div>
-        </button>
-      </div>
-
       {/* Keryk AI footer */}
-      <div className="flex items-center justify-center gap-1.5 py-4 pb-24">
+      <div className="shrink-0 flex items-center justify-center gap-1.5 py-2 pb-3">
         <span className="text-[10px] text-gray-300">Powered by</span>
         <Image src="/keryk-ai-logo.png" alt="Keryk AI" width={14} height={14} className="rounded-sm opacity-40" />
         <span className="text-[10px] font-semibold text-gray-300">Keryk AI</span>
@@ -415,20 +352,6 @@ export default function HomePage() {
         />
       )}
 
-      <ComingSoonSheet
-        isOpen={showFutureFeature}
-        onClose={() => setShowFutureFeature(false)}
-        title="Coming Soon"
-        message="AWP is building more tools on this platform. Upcoming features include AI field assistants, automated site risk analysis, schedule optimization, permit management, compliance documentation, and more."
-      />
-
-      <ComingSoonSheet
-        isOpen={showThirdPartyFeature}
-        onClose={() => setShowThirdPartyFeature(false)}
-        title="Coming Soon — 3rd Party"
-        message="AWP is partnering with leading field technology providers to bring third-party tools directly into this platform. Upcoming integrations include partner apps for inspection, permitting, crew management, and compliance — all accessible from the AWP App Store."
-      />
-
       {/* Backdrop behind agent widget during active call */}
       {agentActive && (
         <div
@@ -443,7 +366,6 @@ export default function HomePage() {
         userEmail={user?.email ?? ''}
         org={userOrg}
       />
-    </div>
     </AppShell>
   );
 }
