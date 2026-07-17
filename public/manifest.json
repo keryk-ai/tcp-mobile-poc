@@ -1,23 +1,23 @@
 {
-  "name": "AWP Traffic Plans",
-  "short_name": "TCP Plans",
+  "name": "AWP Mobile",
+  "short_name": "AWP Mobile",
   "description": "Request traffic control plan estimates from your phone",
   "start_url": "/home",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#FF6B00",
+  "background_color": "#121214",
+  "theme_color": "#121214",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/awp-logo.jpg",
+      "src": "/icons/awp-icon-192.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/awp-logo.jpg",
+      "src": "/icons/awp-icon-512.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     }
   ]
