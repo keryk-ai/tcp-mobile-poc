@@ -27,6 +27,11 @@
 
 @import "tailwindcss";
 
+/* Force light mode: rebind the dark: variant to a .dark class that is never
+   applied, so prefers-color-scheme no longer activates dark styles. Remove
+   this override to restore automatic dark mode. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --background: 0 0% 100%;
