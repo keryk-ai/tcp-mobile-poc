@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import TabBar from './TabBar';
+import AlphaNotice from './AlphaNotice';
 
 export default function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <div className="sticky bottom-0">
           <TabBar />
         </div>
+        <AlphaNotice />
       </div>
     </div>
   );
