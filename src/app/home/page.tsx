@@ -10,7 +10,7 @@ import JobDetailSheet from '@/components/JobDetailSheet';
 import DemoSiteSheet from '@/components/DemoSiteSheet';
 import NotificationSheet from '@/components/NotificationSheet';
 import StatusBadge from '@/components/StatusBadge';
-import ElevenLabsWidget from '@/components/ElevenLabsWidget';
+import VoiceAgent from '@/components/VoiceAgent';
 import type { EstimateDoc } from '@/types/estimate';
 import { getJobStatus, parseJobInput, formatOrg } from '@/types/estimate';
 import { getFirestoreDb } from '@/lib/firebase';
@@ -23,8 +23,6 @@ const SiteMapView = dynamic(() => import('@/components/SiteMapView'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-gray-100 dark:bg-neutral-800 animate-pulse" />,
 });
-
-const AWP_AGENT_ID = process.env.NEXT_PUBLIC_AWP_AGENT_ID ?? 'agent_8301kw2ea0h1ex0af3yjjee8kwef';
 
 type HomeTab = 'new' | 'scheduled' | 'completed';
 
@@ -44,22 +42,6 @@ export default function HomePage() {
   const [agentActive, setAgentActive] = useState(false);
 
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'there';
-
-  // Listen for ElevenLabs widget call start/end to show a backdrop
-  useEffect(() => {
-    const attach = () => {
-      const widget = document.querySelector('elevenlabs-convai');
-      if (!widget) return;
-      widget.addEventListener('elevenlabs-convai:call', () => setAgentActive(true));
-      widget.addEventListener('elevenlabs-convai:disconnect', () => setAgentActive(false));
-      widget.addEventListener('elevenlabs-convai:close', () => setAgentActive(false));
-    };
-    // Retry a few times to catch the lazily-loaded widget
-    attach();
-    const t1 = setTimeout(attach, 1000);
-    const t2 = setTimeout(attach, 3000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
 
   // Subscribe to org jobs
   useEffect(() => {
@@ -360,11 +342,11 @@ export default function HomePage() {
         />
       )}
 
-      {/* ElevenLabs floating voice widget */}
-      <ElevenLabsWidget
-        agentId={AWP_AGENT_ID}
+      {/* Auth-enabled floating voice agent (AGE-83) */}
+      <VoiceAgent
         userEmail={user?.email ?? ''}
         org={userOrg}
+        onActiveChange={setAgentActive}
       />
     </AppShell>
   );

@@ -3,9 +3,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/components/AuthContext';
 import AppShell from '@/components/AppShell';
-import ElevenLabsWidget from '@/components/ElevenLabsWidget';
-
-const AWP_AGENT_ID = process.env.NEXT_PUBLIC_AWP_AGENT_ID ?? 'agent_8301kw2ea0h1ex0af3yjjee8kwef';
+import VoiceAgent from '@/components/VoiceAgent';
 
 export default function RequestLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -27,8 +25,7 @@ export default function RequestLayout({ children }: { children: ReactNode }) {
       </div>
       {children}
 
-      <ElevenLabsWidget
-        agentId={AWP_AGENT_ID}
+      <VoiceAgent
         userEmail={user?.email ?? ''}
         org={userOrg}
       />
