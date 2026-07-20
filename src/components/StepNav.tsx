@@ -42,7 +42,7 @@ export default function StepNav({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full border-t border-gray-100 dark:border-neutral-800">
       {/* Progress dots */}
       <div className="flex items-center justify-center gap-2 py-3">
         {STEP_LABELS.map((label, i) => {
@@ -74,18 +74,20 @@ export default function StepNav({
       </div>
 
       {/* Navigation buttons */}
-      <div className="flex gap-3 px-4 pb-4">
+      <div className="flex gap-3 px-4 pb-safe pb-4">
         <button
+          type="button"
           onClick={handleBack}
-          className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm active:bg-gray-50"
+          className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-neutral-600 text-gray-700 dark:text-neutral-200 font-semibold text-sm active:bg-gray-50 dark:active:bg-neutral-800"
         >
           ← Back
         </button>
         {!hideNext && (
           <button
+            type="button"
             onClick={onNext}
             disabled={nextDisabled}
-            className="flex-2 flex-grow-[2] py-3 rounded-xl bg-[hsl(25,100%,50%)] text-white font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed active:opacity-80"
+            className="flex-[2] py-3 rounded-xl bg-[hsl(25,100%,50%)] text-white font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed active:opacity-80"
           >
             {nextLabel}
           </button>

@@ -71,26 +71,24 @@ export default function DetailsPage() {
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      <StepNav currentStep={1} onNext={handleNext} nextDisabled={!isValid} />
-
-      <div className="flex-1 px-4 pb-6 space-y-5">
+    <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-neutral-900">
+      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-5">
         {/* Work Order # */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Work Order #</label>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Work Order #</label>
           <input
             type="text"
             value={workOrderId}
             onChange={(e) => setWorkOrderId(e.target.value)}
             placeholder="WO-2024-001"
-            className="w-full px-4 py-3.5 rounded-xl border border-gray-300 text-gray-900 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[hsl(25,100%,50%)] focus:border-transparent"
+            className="w-full px-4 py-3.5 rounded-xl border border-gray-300 dark:border-neutral-700 text-gray-900 dark:text-white dark:bg-neutral-800 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[hsl(25,100%,50%)] focus:border-transparent"
           />
         </div>
 
         {/* Work Address */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-semibold text-gray-700">Work Address</label>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">Work Address</label>
             <button
               type="button"
               onClick={handleUseLocation}
@@ -121,25 +119,29 @@ export default function DetailsPage() {
             value={address}
             onChange={(e) => { setAddress(e.target.value); setGpsState('idle'); setGpsError(''); }}
             placeholder="123 Main St, Charlotte, NC"
-            className="w-full px-4 py-3.5 rounded-xl border border-gray-300 text-gray-900 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[hsl(25,100%,50%)] focus:border-transparent"
+            className="w-full px-4 py-3.5 rounded-xl border border-gray-300 dark:border-neutral-700 text-gray-900 dark:text-white dark:bg-neutral-800 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[hsl(25,100%,50%)] focus:border-transparent"
           />
           {gpsState === 'error' && (
             <p className="mt-1.5 text-xs text-red-500">{gpsError}</p>
           )}
+          <p className="mt-1.5 text-xs text-gray-400 dark:text-neutral-500">
+            System uses the MUTCD ruleset. State DOT and local jurisdiction rules will be added over time.
+          </p>
         </div>
 
         {/* Time of Day */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Time of Day</label>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Time of Day</label>
           <div className="grid grid-cols-2 gap-3">
             {(['Day', 'Night'] as TimeOfDay[]).map((t) => (
               <button
                 key={t}
+                type="button"
                 onClick={() => setTimeOfDay(t)}
                 className={`py-3.5 rounded-xl border font-semibold text-sm transition-colors ${
                   timeOfDay === t
                     ? 'bg-[hsl(25,100%,50%)] text-white border-transparent'
-                    : 'bg-white text-gray-700 border-gray-300'
+                    : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-neutral-700'
                 }`}
               >
                 {t}
@@ -150,28 +152,35 @@ export default function DetailsPage() {
 
         {/* Construction Type */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Construction Type</label>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Construction Type</label>
           <div className="space-y-2">
             {([
               { value: 'underground', label: 'Underground' },
               { value: 'overhead', label: 'Overhead' },
               { value: 'other', label: 'Other' },
             ] as { value: ConstructionType; label: string }[]).map(({ value, label }) => (
-              <label key={value} className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 cursor-pointer">
-                <input
-                  type="radio"
-                  name="constructionType"
-                  value={value}
-                  checked={constructionType === value}
-                  onChange={() => setConstructionType(value)}
-                  className="w-4 h-4 accent-[hsl(25,100%,50%)]"
+              <button
+                key={value}
+                type="button"
+                onClick={() => setConstructionType(value)}
+                aria-pressed={constructionType === value}
+                className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-left"
+              >
+                <span
+                  className={`w-4 h-4 rounded-full border-2 shrink-0 ${
+                    constructionType === value
+                      ? 'border-[hsl(25,100%,50%)] bg-[hsl(25,100%,50%)]'
+                      : 'border-gray-300 dark:border-neutral-600'
+                  }`}
                 />
-                <span className="text-gray-800 font-medium">{label}</span>
-              </label>
+                <span className="text-gray-800 dark:text-gray-100 font-medium">{label}</span>
+              </button>
             ))}
           </div>
         </div>
       </div>
+
+      <StepNav currentStep={1} onNext={handleNext} nextDisabled={!isValid} />
     </div>
   );
 }

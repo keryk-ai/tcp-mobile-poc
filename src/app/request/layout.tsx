@@ -18,18 +18,18 @@ export default function RequestLayout({ children }: { children: ReactNode }) {
   }, [user]);
 
   return (
-    <AppShell>
-    <div className="flex flex-col min-h-screen bg-white">
-      <div className="px-4 pt-safe pt-4 pb-2">
-        <h1 className="text-base font-bold text-gray-900">Request a Site</h1>
-      </div>
-      {children}
+    <AppShell hideTabBar>
+      <div className="flex flex-col flex-1 min-h-0">
+        <div className="px-4 pt-safe pt-4 pb-2">
+          <h1 className="text-base font-bold text-gray-900 dark:text-white">Request a Site</h1>
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">{children}</div>
 
-      <VoiceAgent
-        userEmail={user?.email ?? ''}
-        org={userOrg}
-      />
-    </div>
+        <VoiceAgent
+          userEmail={user?.email ?? ''}
+          org={userOrg}
+        />
+      </div>
     </AppShell>
   );
 }

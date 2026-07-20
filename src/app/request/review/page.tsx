@@ -60,17 +60,39 @@ export default function ReviewPage() {
 
   if (!form) return null;
 
-  return (
-    <div className="flex flex-col flex-1">
-      <StepNav currentStep={4} hideNext />
+  const isDraftComplete = Boolean(form.pinA && form.pinB && form.workType);
 
-      <div className="flex-1 px-4 pb-6 space-y-4">
+  if (!isDraftComplete) {
+    return (
+      <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-neutral-900">
+        <div className="flex-1 overflow-y-auto">
+          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-4 mx-4 mt-4">
+            <p className="text-sm font-semibold text-amber-800">This request is incomplete.</p>
+            <p className="text-sm text-amber-800 mt-1">Some details are missing. Please start from the beginning.</p>
+            <button
+              type="button"
+              onClick={() => router.replace('/request/details')}
+              className="mt-3 w-full py-3 rounded-xl bg-[hsl(25,100%,50%)] text-white font-semibold text-sm"
+            >
+              Start a new request
+            </button>
+          </div>
+        </div>
+
+        <StepNav currentStep={4} hideNext />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-neutral-900 relative">
+      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-4">
         {/* Summary */}
-        <div className="rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="rounded-2xl border border-gray-200 dark:border-neutral-700 overflow-hidden">
+          <div className="px-4 py-3 bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Job Summary</div>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-neutral-800">
             <Row label="Work Order" value={form.workOrderId || '—'} />
             <Row label="Address" value={form.address || '—'} />
             <Row label="Time" value={form.timeOfDay || '—'} />
@@ -89,7 +111,7 @@ export default function ReviewPage() {
           <div className="flex gap-2">
             <span className="text-amber-600 mt-0.5">ⓘ</span>
             <p className="text-sm text-amber-800 leading-snug">
-              <strong>Draft budgetary estimate only.</strong> For a compliant TCP, order a reviewed plan from the result screen.
+              <strong>Draft budgetary estimate only.</strong> For a compliant TCP, request one from the result screen.
             </p>
           </div>
         </div>
@@ -97,7 +119,7 @@ export default function ReviewPage() {
         {error && (
           <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3">
             <p className="text-sm text-red-700">{error}</p>
-            <button onClick={handleSubmit} className="text-sm font-semibold text-red-700 mt-2 underline">
+            <button type="button" onClick={handleSubmit} className="text-sm font-semibold text-red-700 mt-2 underline">
               Try again
             </button>
           </div>
@@ -106,13 +128,15 @@ export default function ReviewPage() {
         {/* Actions */}
         <div className="space-y-3 pt-1">
           <button
+            type="button"
             onClick={() => router.push('/request/details')}
             disabled={submitting}
-            className="w-full py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm disabled:opacity-40"
+            className="w-full py-3.5 rounded-xl border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-gray-200 font-semibold text-sm disabled:opacity-40"
           >
             ✏ Edit
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={submitting}
             className="w-full py-3.5 rounded-xl bg-[hsl(25,100%,50%)] text-white font-bold text-base disabled:opacity-70"
@@ -127,25 +151,27 @@ export default function ReviewPage() {
             )}
           </button>
         </div>
-
-        {/* Loading overlay */}
-        {submitting && (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90">
-            <div className="w-12 h-12 rounded-full border-4 border-[hsl(25,100%,50%)] border-t-transparent animate-spin mb-5" />
-            <p className="font-semibold text-gray-900 text-lg">Generating your site configuration…</p>
-            <p className="text-gray-500 text-sm mt-1">This takes about 3–5 seconds.</p>
-          </div>
-        )}
       </div>
+
+      <StepNav currentStep={4} hideNext />
+
+      {/* Loading overlay */}
+      {submitting && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/90 dark:bg-neutral-900/90">
+          <div className="w-12 h-12 rounded-full border-4 border-[hsl(25,100%,50%)] border-t-transparent animate-spin mb-5" />
+          <p className="font-semibold text-gray-900 dark:text-white text-lg">Generating your site configuration…</p>
+          <p className="text-gray-500 text-sm mt-1">This takes about 3–5 seconds.</p>
+        </div>
+      )}
     </div>
   );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-neutral-800 last:border-b-0">
       <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm font-semibold text-gray-900 text-right max-w-[60%]">{value}</span>
+      <span className="text-sm font-semibold text-gray-900 dark:text-white text-right max-w-[60%]">{value}</span>
     </div>
   );
 }
