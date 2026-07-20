@@ -78,10 +78,8 @@ export default function MapPage() {
   }, []);
 
   return (
-    <div className="flex flex-col flex-1" style={{ height: 'calc(100vh - 56px)' }}>
-      <StepNav currentStep={2} onNext={handleNext} nextDisabled={!isValid} />
-
-      <div className="flex-1 overflow-hidden relative">
+    <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-neutral-900">
+      <div className="flex-1 min-h-0 overflow-hidden relative">
         <PinMap
           key={resetKey}
           initialCenter={initialCenter}
@@ -92,10 +90,11 @@ export default function MapPage() {
         {/* Clear pins button — only shown once at least one pin is placed */}
         {(pinA || pinB) && (
           <button
+            type="button"
             onClick={handleReset}
-            className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 bg-white text-gray-700 text-xs font-semibold px-3 py-2 rounded-full shadow-md border border-gray-200 active:bg-gray-50"
+            className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-xs font-semibold px-3 py-2 rounded-full shadow-md border border-gray-200 dark:border-neutral-700 active:bg-gray-50 dark:active:bg-neutral-700"
           >
-            <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg className="w-3.5 h-3.5 text-gray-500 dark:text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
               <path d="M3 3v5h5" />
             </svg>
@@ -103,6 +102,8 @@ export default function MapPage() {
           </button>
         )}
       </div>
+
+      <StepNav currentStep={2} onNext={handleNext} nextDisabled={!isValid} />
     </div>
   );
 }

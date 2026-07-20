@@ -88,26 +88,20 @@ export default function WorkTypePage() {
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      <StepNav
-        currentStep={3}
-        onNext={handleNext}
-        nextDisabled={!isValid || checkingRoad}
-        nextLabel={checkingRoad ? 'Checking road…' : 'Next →'}
-      />
-
-      <div className="flex-1 px-4 pb-6 space-y-3">
-        <div className="text-sm font-semibold text-gray-700 mb-2">Work Type</div>
+    <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-neutral-900">
+      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-3">
+        <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Work Type</div>
 
         {/* Flagging */}
         <button
+          type="button"
           onClick={() => selectWorkType('flagging')}
           className={`w-full p-4 rounded-xl border-2 text-left flex items-center gap-3 transition-colors ${
-            workType === 'flagging' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
+            workType === 'flagging' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800'
           }`}
         >
           <div className="flex-1">
-            <div className="font-semibold text-gray-900">Flagging</div>
+            <div className="font-semibold text-gray-900 dark:text-white">Flagging</div>
             <div className="text-xs text-gray-500 mt-0.5">TA-10 — single flagger operation, 2-lane roads only</div>
           </div>
           {workType === 'flagging' && (
@@ -126,6 +120,7 @@ export default function WorkTypePage() {
               valid on 2-lane roads. Please select <strong>Lane Closure</strong> instead.
             </p>
             <button
+              type="button"
               onClick={() => selectWorkType('lane-closure')}
               className="text-sm font-semibold text-red-700 mt-2 underline"
             >
@@ -136,13 +131,14 @@ export default function WorkTypePage() {
 
         {/* Lane Closure */}
         <button
+          type="button"
           onClick={() => selectWorkType('lane-closure')}
           className={`w-full p-4 rounded-xl border-2 text-left flex items-center gap-3 transition-colors ${
-            workType === 'lane-closure' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
+            workType === 'lane-closure' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800'
           }`}
         >
           <div className="flex-1">
-            <div className="font-semibold text-gray-900">Lane Closure</div>
+            <div className="font-semibold text-gray-900 dark:text-white">Lane Closure</div>
             <div className="text-xs text-gray-500 mt-0.5">TA-30/30R/33 — relay resolves from road geometry</div>
           </div>
           {workType === 'lane-closure' && (
@@ -154,14 +150,15 @@ export default function WorkTypePage() {
 
         {/* Complex Job: Request a TCP */}
         <button
+          type="button"
           onClick={() => selectWorkType('tcp-request')}
           className={`w-full p-4 rounded-xl border-2 text-left flex items-center gap-3 transition-colors ${
-            workType === 'tcp-request' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 bg-white'
+            workType === 'tcp-request' ? 'border-[hsl(25,100%,50%)] bg-orange-50' : 'border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800'
           }`}
         >
           <div className="flex-1">
-            <div className="font-semibold text-gray-900">Complex Job — Request a TCP</div>
-            <div className="text-xs text-gray-500 mt-0.5">Multi-lane, intersection, or non-standard work — an AWP engineer will design your plan</div>
+            <div className="font-semibold text-gray-900 dark:text-white">Complex Job — Request a TCP</div>
+            <div className="text-xs text-gray-500 mt-0.5">Multi-lane, intersection, or non-standard work — an AWP engineer will design your job details</div>
           </div>
           {workType === 'tcp-request' && (
             <div className="w-5 h-5 rounded-full bg-[hsl(25,100%,50%)] flex items-center justify-center shrink-0">
@@ -172,11 +169,12 @@ export default function WorkTypePage() {
 
         {/* Shoulder Closure (Coming Soon) */}
         <button
+          type="button"
           onClick={() => setShowShoulderSheet(true)}
-          className="w-full p-4 rounded-xl border-2 border-gray-200 text-left flex items-center gap-3 opacity-60"
+          className="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-neutral-700 text-left flex items-center gap-3 opacity-60"
         >
           <div className="flex-1">
-            <div className="font-semibold text-gray-700">Shoulder Closure</div>
+            <div className="font-semibold text-gray-700 dark:text-gray-300">Shoulder Closure</div>
           </div>
           <span className="text-xs font-semibold bg-gray-100 text-gray-500 px-2 py-1 rounded-full">Coming Soon</span>
         </button>
@@ -184,16 +182,17 @@ export default function WorkTypePage() {
         {/* Lane selection (Lane Closure only) */}
         {workType === 'lane-closure' && (
           <div className="pt-2">
-            <div className="text-sm font-semibold text-gray-700 mb-2">Which lane is being closed?</div>
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Which lane is being closed?</div>
             <div className="grid grid-cols-2 gap-3">
               {(['left', 'right'] as LaneSide[]).map((lane) => (
                 <button
                   key={lane}
+                  type="button"
                   onClick={() => setSelectedLane(lane)}
                   className={`py-3.5 rounded-xl border font-semibold text-sm capitalize transition-colors ${
                     selectedLane === lane
                       ? 'bg-[hsl(25,100%,50%)] text-white border-transparent'
-                      : 'bg-white text-gray-700 border-gray-300'
+                      : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-neutral-700'
                   }`}
                 >
                   {lane === 'left' ? 'Left Lane' : 'Right Lane'}
@@ -206,11 +205,11 @@ export default function WorkTypePage() {
         {/* Direction (Flagging and Lane Closure only) */}
         {(workType === 'flagging' || workType === 'lane-closure') && (
           <div className="pt-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Direction of travel</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Direction of travel</label>
             <select
               value={direction}
               onChange={(e) => setDirection(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-xl border border-gray-300 text-gray-900 text-base bg-white focus:outline-none focus:ring-2 focus:ring-[hsl(25,100%,50%)] focus:border-transparent"
+              className="w-full px-4 py-3.5 rounded-xl border border-gray-300 dark:border-neutral-700 text-gray-900 dark:text-white text-base bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-[hsl(25,100%,50%)] focus:border-transparent"
             >
               <option value="">Select direction…</option>
               {DIRECTIONS.map((d) => (
@@ -229,32 +228,37 @@ export default function WorkTypePage() {
             An AWP traffic engineer will review your site details and deliver a compliant, field-ready TCP within 72 hours. Tap <strong>Next</strong> to submit your request.
           </div>
         )}
+
+        {/* AI help link */}
+        <div className="flex justify-center pt-4">
+          <button
+            type="button"
+            onClick={() => router.push('/ai')}
+            aria-label="Ask the AWP AI Expert"
+            className="flex items-center gap-1.5 text-sm text-[hsl(25,100%,50%)] font-medium py-2"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8" />
+            </svg>
+            Not sure? Ask the AWP AI Expert
+          </button>
+        </div>
       </div>
 
-      {/* AI help link */}
-      <div className="px-4 pb-6 flex justify-center">
-        <button
-          type="button"
-          onClick={() => {
-            const widget = document.querySelector('elevenlabs-convai') as HTMLElement | null;
-            widget?.click();
-          }}
-          className="flex items-center gap-1.5 text-sm text-[hsl(25,100%,50%)] font-medium"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8" />
-          </svg>
-          Not sure? Ask the AWP AI Expert
-        </button>
-      </div>
+      <StepNav
+        currentStep={3}
+        onNext={handleNext}
+        nextDisabled={!isValid || checkingRoad}
+        nextLabel={checkingRoad ? 'Checking road…' : 'Next →'}
+      />
 
       {/* TCP request sending overlay */}
       {sending && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm gap-5">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm gap-5">
           <div className="w-12 h-12 rounded-full border-4 border-[hsl(25,100%,50%)] border-t-transparent animate-spin" />
           <div className="text-center">
-            <div className="font-bold text-gray-900 text-lg">Sending TCP Request</div>
+            <div className="font-bold text-gray-900 dark:text-white text-lg">Sending TCP Request</div>
             <div className="text-sm text-gray-500 mt-1">Your request is being sent to an AWP engineer…</div>
           </div>
         </div>
