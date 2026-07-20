@@ -24,6 +24,8 @@ export function categorizeRoad(road: RoadAttributes): RoadType {
   const lanes = road.lanes != null ? Math.floor(road.lanes) : 2;
 
   if (osmType === 'motorway' || osmType === 'motorway_link') return 'freeway';
+  // AGE-89: residential is always flagging-eligible (Morgan 2026-07-08) — upstream lane data can be mis-attributed on minor roads
+  if (osmType === 'residential') return '2-lane-2-way';
   if (isDivided && isOneWay) return 'divided-highway';
   if (lanes <= 2 && !isOneWay) return '2-lane-2-way';
   if (lanes > 2 && isDivided) return 'divided-highway';

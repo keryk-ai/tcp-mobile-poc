@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useId, useState } from 'react';
+import { useCallback, useId, useState, type SVGProps } from 'react';
 import { ConversationProvider, useConversation } from '@elevenlabs/react';
 import { getIdToken } from '@/lib/auth';
 
@@ -14,6 +14,10 @@ interface VoiceAgentProps {
   org?: string;
   activeJobId?: string;
   onActiveChange?: (active: boolean) => void;
+  /** 'floating' (default): fixed pill, used on Home and the request wizard.
+   *  'embedded': large inline call orb for the AI tab's own screen. Same
+   *  session/auth logic either way — only the outer chrome differs. */
+  variant?: 'floating' | 'embedded';
 }
 
 function VoiceAgentButton({
@@ -21,6 +25,7 @@ function VoiceAgentButton({
   org = '',
   activeJobId = '',
   onActiveChange,
+  variant = 'floating',
 }: VoiceAgentProps) {
   const sessionId = useId().replace(/:/g, '');
   const [fetchingToken, setFetchingToken] = useState(false);
@@ -68,6 +73,61 @@ function VoiceAgentButton({
   const connected = conversation.status === 'connected';
   const busy = fetchingToken || conversation.status === 'connecting';
 
+  if (variant === 'embedded') {
+    return (
+      <div className="flex flex-col items-center gap-6">
+        {!connected ? (
+          <button
+            type="button"
+            onClick={startCall}
+            disabled={busy}
+            aria-label="Ask AWP AI"
+            className={`w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2 bg-[hsl(25,100%,50%)] active:opacity-85 ${
+              busy ? 'opacity-60' : ''
+            }`}
+          >
+            <MicIcon className="w-10 h-10 text-white" />
+            <span className="text-white font-bold text-sm">
+              {busy ? 'Connecting…' : 'Ask AWP AI'}
+            </span>
+          </button>
+        ) : (
+          <div
+            className={`w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2 ${
+              conversation.isSpeaking ? 'bg-emerald-500' : 'bg-[hsl(25,100%,50%)]'
+            }`}
+          >
+            <MicIcon className="w-10 h-10 text-white" />
+            <span className="text-white font-bold text-sm">
+              {conversation.isSpeaking ? 'Speaking…' : 'Listening…'}
+            </span>
+          </div>
+        )}
+
+        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
+        {connected && (
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => conversation.setMuted(!conversation.isMuted)}
+              className="px-5 py-3 rounded-xl border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-gray-200 font-semibold text-sm"
+            >
+              {conversation.isMuted ? 'Unmute' : 'Mute'}
+            </button>
+            <button
+              type="button"
+              onClick={() => conversation.endSession()}
+              className="px-5 py-3 rounded-xl bg-red-600 text-white font-semibold text-sm active:opacity-85"
+            >
+              End Conversation
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="fixed bottom-24 right-4 z-[999] flex flex-col items-end gap-2">
       {error && (
@@ -96,6 +156,15 @@ function VoiceAgentButton({
         {connected ? 'End call' : busy ? 'Connecting…' : 'Ask AWP AI'}
       </button>
     </div>
+  );
+}
+
+function MicIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 512 512" fill="none" stroke="currentColor" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M192 448h128M384 208v32c0 70.4-57.6 128-128 128h0c-70.4 0-128-57.6-128-128v-32M256 368v80" />
+      <path d="M256 64a63.68 63.68 0 00-64 64v111c0 35.2 29 65 64 65s64-29 64-65V128c0-36-28-64-64-64z" />
+    </svg>
   );
 }
 
